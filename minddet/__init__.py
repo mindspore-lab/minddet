@@ -1,0 +1,3 @@
+"""
+minddet init
+"""
