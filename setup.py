@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-# exec(open("minddet/version.py").read())
+__version__ = "0.1.0"
 
 
 def read_requirements(fps):
@@ -23,7 +23,7 @@ setup(
         "Sources": "https://github.com/mindspore-lab/minddet",
         "Issue Tracker": "https://github.com/mindspore-lab/minddet/issues",
     },
-    description="A toolbox of OCR models and algorithms based on MindSpore.",
+    description="A toolbox of Det models and algorithms based on MindSpore.",
     license="Apache Software License 2.0",
     include_package_data=True,
     packages=find_packages(include=["minddet", "minddet.*"]),
