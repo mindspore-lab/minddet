@@ -4,12 +4,17 @@ Functional Cells to be used.
 
 import math
 import time
-import numpy as np
+
 import mindspore.nn as nn
 import mindspore.ops as ops
+import numpy as np
 from mindspore import dtype as mstype
 from mindspore.common.tensor import Tensor
-from mindspore.nn.learning_rate_schedule import LearningRateSchedule, PolynomialDecayLR, WarmUpLR
+from mindspore.nn.learning_rate_schedule import (
+    LearningRateSchedule,
+    PolynomialDecayLR,
+    WarmUpLR,
+)
 from mindspore.train.callback import Callback
 
 reciprocal = ops.Reciprocal()
@@ -81,7 +86,9 @@ class GatherFeature(nn.Cell):
             # (b, N)->(b*N, 1)
             b, N = self.shape(ind)
             ind = self.reshape(ind, (-1, 1))
-            ind_b = ops.range(self.start, Tensor(b, mstype.int32), self.step).astype(mstype.int32)
+            ind_b = ops.range(self.start, Tensor(b, mstype.int32), self.step).astype(
+                mstype.int32
+            )
             ind_b = self.reshape(ind_b, (-1, 1))
             ind_b = self.tile(ind_b, (1, N))
             ind_b = self.reshape(ind_b, (-1, 1))
@@ -142,8 +149,11 @@ class Sigmoid(nn.Cell):
     def construct(self, x, min_value=1e-4, max_value=1 - 1e-4):
         x = self.sigmoid(x)
         dt = self.dtype(x)
-        x = self.clip_by_value(x, self.cast(ops.tuple_to_array((min_value,)), dt),
-                               self.cast(ops.tuple_to_array((max_value,)), dt))
+        x = self.clip_by_value(
+            x,
+            self.cast(ops.tuple_to_array((min_value,)), dt),
+            self.cast(ops.tuple_to_array((max_value,)), dt),
+        )
         return x
 
 
@@ -181,14 +191,19 @@ class FocalLoss(nn.Cell):
         neg_weights = self.pow(1 - target, self.beta)
 
         pos_loss = self.log(out) * self.pow(1 - out, self.alpha) * pos_inds
-        neg_loss = self.log(1 - out) * self.pow(out, self.alpha) * neg_weights * neg_inds
+        neg_loss = (
+            self.log(1 - out) * self.pow(out, self.alpha) * neg_weights * neg_inds
+        )
 
         num_pos = self.reduce_sum(pos_inds, ())
-        num_pos = self.select(self.equal(num_pos, 0.0),
-                              self.fill(self.dtype(num_pos), self.shape(num_pos), 1.0), num_pos)
+        num_pos = self.select(
+            self.equal(num_pos, 0.0),
+            self.fill(self.dtype(num_pos), self.shape(num_pos), 1.0),
+            num_pos,
+        )
         pos_loss = self.reduce_sum(pos_loss, ())
         neg_loss = self.reduce_sum(neg_loss, ())
-        loss = - (pos_loss + neg_loss) / num_pos
+        loss = -(pos_loss + neg_loss) / num_pos
         return loss
 
 
@@ -203,16 +218,16 @@ class RegLoss(nn.Cell):
         Tensor, regression loss.
     """
 
-    def __init__(self, mode='l1'):
+    def __init__(self, mode="l1"):
         super(RegLoss, self).__init__()
         self.reduce_sum = ops.ReduceSum()
         self.cast = ops.Cast()
         self.expand_dims = ops.ExpandDims()
         self.reshape = ops.Reshape()
         self.gather_feature = TransposeGatherFeature()
-        if mode == 'l1':
-            self.loss = nn.L1Loss(reduction='sum')
-        elif mode == 'sl1':
+        if mode == "l1":
+            self.loss = nn.L1Loss(reduction="sum")
+        elif mode == "sl1":
             self.loss = nn.SmoothL1Loss()
         else:
             self.loss = None
@@ -305,7 +320,8 @@ class TimeMonitor(Callback):
         step_seconds = epoch_seconds / step_size
 
         train_log = "{} epoch time: {:5.3f} ms, per step time: {:5.3f} ms".format(
-            mode.title(), epoch_seconds, step_seconds)
+            mode.title(), epoch_seconds, step_seconds
+        )
 
         if self.data_time and not self.data_sink(run_context):
             data_step_seconds = self.data_time_sum * 1000 / step_size
@@ -355,24 +371,42 @@ class LossCallBack(Callback):
             if self._enable_static_time:
                 cur_time = time.time()
                 time_per_step = cur_time - self._begin_time
-                print("epoch: {}, current epoch percent: {}, step: {}, time per step: {} s, outputs are {}"
-                      .format(int(epoch_num), "%.3f" % percent, cb_params.cur_step_num, "%.3f" % time_per_step,
-                              str(cb_params.net_outputs)), flush=True)
+                print(
+                    "epoch: {}, current epoch percent: {}, step: {}, time per step: {} s, outputs are {}".format(
+                        int(epoch_num),
+                        "%.3f" % percent,
+                        cb_params.cur_step_num,
+                        "%.3f" % time_per_step,
+                        str(cb_params.net_outputs),
+                    ),
+                    flush=True,
+                )
             else:
                 print(
-                    "epoch: {} | current epoch percent: {} | step: {} | loss {} | overflow {} | scaling_sens {} | lr {}"
-                        .format(int(epoch_num), "%.3f" % percent, cb_params.cur_step_num,
-                                str(cb_params.net_outputs[0].asnumpy()),
-                                str(cb_params.net_outputs[1].asnumpy()),
-                                str(cb_params.net_outputs[2].asnumpy()),
-                                str(cb_params.net_outputs[3].asnumpy())), flush=True)
+                    "epoch: {} | epoch percent: {} | step: {} | loss {} | overflow {} | scale {} | lr {}".format(
+                        int(epoch_num),
+                        "%.3f" % percent,
+                        cb_params.cur_step_num,
+                        str(cb_params.net_outputs[0].asnumpy()),
+                        str(cb_params.net_outputs[1].asnumpy()),
+                        str(cb_params.net_outputs[2].asnumpy()),
+                        str(cb_params.net_outputs[3].asnumpy()),
+                    ),
+                    flush=True,
+                )
         else:
-            print("epoch: {} | step: {} | loss {} | overflow {} | scaling_sens {} | lr {}"
-                  "".format(cb_params.cur_epoch_num, cb_params.cur_step_num,
-                            str(cb_params.net_outputs[0]),
-                            str(cb_params.net_outputs[1]),
-                            str(cb_params.net_outputs[2]),
-                            str(cb_params.net_outputs[3])), flush=True)
+            print(
+                "epoch: {} | step: {} | loss {} | overflow {} | scaling_sens {} | lr {}"
+                "".format(
+                    cb_params.cur_epoch_num,
+                    cb_params.cur_step_num,
+                    str(cb_params.net_outputs[0]),
+                    str(cb_params.net_outputs[1]),
+                    str(cb_params.net_outputs[2]),
+                    str(cb_params.net_outputs[3]),
+                ),
+                flush=True,
+            )
 
 
 class CenterNetPolynomialDecayLR(LearningRateSchedule):
@@ -390,13 +424,17 @@ class CenterNetPolynomialDecayLR(LearningRateSchedule):
         Tensor, learning rate in time.
     """
 
-    def __init__(self, learning_rate, end_learning_rate, warmup_steps, decay_steps, power):
+    def __init__(
+        self, learning_rate, end_learning_rate, warmup_steps, decay_steps, power
+    ):
         super(CenterNetPolynomialDecayLR, self).__init__()
         self.warmup_flag = False
         if warmup_steps > 0:
             self.warmup_flag = True
             self.warmup_lr = WarmUpLR(learning_rate, warmup_steps)
-        self.decay_lr = PolynomialDecayLR(learning_rate, end_learning_rate, decay_steps, power)
+        self.decay_lr = PolynomialDecayLR(
+            learning_rate, end_learning_rate, decay_steps, power
+        )
         self.warmup_steps = Tensor(np.array([warmup_steps]).astype(np.float32))
 
         self.greater = ops.Greater()
@@ -406,7 +444,9 @@ class CenterNetPolynomialDecayLR(LearningRateSchedule):
     def construct(self, global_step):
         decay_lr = self.decay_lr(global_step)
         if self.warmup_flag:
-            is_warmup = self.cast(self.greater(self.warmup_steps, global_step), mstype.float32)
+            is_warmup = self.cast(
+                self.greater(self.warmup_steps, global_step), mstype.float32
+            )
             warmup_lr = self.warmup_lr(global_step)
             lr = (self.one - is_warmup) * decay_lr + is_warmup * warmup_lr
         else:
@@ -429,13 +469,17 @@ class CenterNetMultiEpochsDecayLR(LearningRateSchedule):
         Tensor, learning rate in time.
     """
 
-    def __init__(self, learning_rate, warmup_steps, multi_epochs, steps_per_epoch, factor=10):
+    def __init__(
+        self, learning_rate, warmup_steps, multi_epochs, steps_per_epoch, factor=10
+    ):
         super(CenterNetMultiEpochsDecayLR, self).__init__()
         self.warmup_flag = False
         if warmup_steps > 0:
             self.warmup_flag = True
             self.warmup_lr = WarmUpLR(learning_rate, warmup_steps)
-        self.decay_lr = MultiEpochsDecayLR(learning_rate, multi_epochs, steps_per_epoch, factor)
+        self.decay_lr = MultiEpochsDecayLR(
+            learning_rate, multi_epochs, steps_per_epoch, factor
+        )
         self.warmup_steps = Tensor(np.array([warmup_steps]).astype(np.float32))
 
         self.greater = ops.Greater()
@@ -472,7 +516,9 @@ class MultiEpochsDecayLR(LearningRateSchedule):
         super(MultiEpochsDecayLR, self).__init__()
         if not isinstance(multi_epochs, (list, tuple)):
             raise TypeError("multi_epochs must be list or tuple.")
-        self.multi_epochs = Tensor(np.array(multi_epochs, dtype=np.float32) * steps_per_epoch)
+        self.multi_epochs = Tensor(
+            np.array(multi_epochs, dtype=np.float32) * steps_per_epoch
+        )
         self.num = len(multi_epochs)
         self.start_learning_rate = learning_rate
         self.steps_per_epoch = steps_per_epoch
@@ -486,7 +532,9 @@ class MultiEpochsDecayLR(LearningRateSchedule):
         cur_step = self.cast(global_step, mstype.float32)
         multi_epochs = self.cast(self.multi_epochs, mstype.float32)
         epochs = self.cast(self.less_equal(multi_epochs, cur_step), mstype.float32)
-        lr = self.start_learning_rate / self.pow(self.factor, self.reduce_sum(epochs, ()))
+        lr = self.start_learning_rate / self.pow(
+            self.factor, self.reduce_sum(epochs, ())
+        )
         return lr
 
 
@@ -508,9 +556,15 @@ class MultiStepWithLinearLR(LearningRateSchedule):
         Class, LinearWithWarmUpLR
     """
 
-    def __init__(self, learning_rate: float, linear_steps: int,
-                 start_linear_lr: float = 0.0, multi_epochs=None,
-                 decay_factor=10, steps_per_epoch: int = 0):
+    def __init__(
+        self,
+        learning_rate: float,
+        linear_steps: int,
+        start_linear_lr: float = 0.0,
+        multi_epochs=None,
+        decay_factor=10,
+        steps_per_epoch: int = 0,
+    ):
         super(MultiStepWithLinearLR, self).__init__()
         self.start_lr = learning_rate
         # self.linear_steps = Tensor(linear_steps, mstype.float32)
@@ -520,10 +574,14 @@ class MultiStepWithLinearLR(LearningRateSchedule):
         self.max = ops.Maximum()
         self.steps_per_epoch = Tensor(steps_per_epoch, mstype.float32)
         self.start_linear_lr = Tensor(start_linear_lr, mstype.float32)
-        self.decay_lr = MultiEpochsDecayLR(learning_rate, multi_epochs, steps_per_epoch, decay_factor)
+        self.decay_lr = MultiEpochsDecayLR(
+            learning_rate, multi_epochs, steps_per_epoch, decay_factor
+        )
         self.one = Tensor(np.array([1.0]).astype(np.float32))
         self.zero_constant = Tensor(0.0, mstype.float32)
-        self.multi_epochs = Tensor(np.array(multi_epochs, dtype=np.float32) * steps_per_epoch)
+        self.multi_epochs = Tensor(
+            np.array(multi_epochs, dtype=np.float32) * steps_per_epoch
+        )
         self.factor = decay_factor
         self.pow = ops.Pow()
         self.cast = ops.Cast()
@@ -537,8 +595,13 @@ class MultiStepWithLinearLR(LearningRateSchedule):
         decay_lr = self.decay_lr(global_step)
         # global_step = self.cast(global_step, mstype.float32)
         if self.has_linear:
-            is_linear = self.cast(self.greater(self.linear_steps, global_step), mstype.float32)
-            percent = self.max(self.zero_constant, (self.linear_steps - global_step) / self.linear_steps)
+            is_linear = self.cast(
+                self.greater(self.linear_steps, global_step), mstype.float32
+            )
+            percent = self.max(
+                self.zero_constant,
+                (self.linear_steps - global_step) / self.linear_steps,
+            )
             linear_lr = (self.one - percent) * self.start_lr + self.start_linear_lr
             learning_rate = (self.one - is_linear) * decay_lr + is_linear * linear_lr
         else:
@@ -564,8 +627,13 @@ class LinearWithWarmUpLR(LearningRateSchedule):
         Class, LinearWithWarmUpLR
     """
 
-    def __init__(self, learning_rate: float, warmup_steps: int, total_steps: int,
-                 warmup_lr_init: float = 0.):
+    def __init__(
+        self,
+        learning_rate: float,
+        warmup_steps: int,
+        total_steps: int,
+        warmup_lr_init: float = 0.0,
+    ):
         super(LinearWithWarmUpLR, self).__init__()
         linear_steps = max(1, total_steps - warmup_steps)
         warmup_steps = max(1, warmup_steps)
@@ -586,6 +654,8 @@ class LinearWithWarmUpLR(LearningRateSchedule):
             percent = global_step / self.warmup_steps
             learning_rate = self.warmup_lr_init + self.learning_rate * percent
         else:
-            percent = self.max(self.zero_constant, (self.total_steps - global_step) / self.linear_steps)
+            percent = self.max(
+                self.zero_constant, (self.total_steps - global_step) / self.linear_steps
+            )
             learning_rate = self.learning_rate * percent
         return learning_rate

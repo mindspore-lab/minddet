@@ -1,31 +1,43 @@
 """
 Data operations, will be used in train.py
 """
-
+import math
 import os
 import sys
-import math
+
 import cv2
+import mindspore.dataset as ds
 import numpy as np
 import pycocotools.coco as coco
-import mindspore.dataset as ds
 from mindspore import log as logger
 from mindspore.mindrecord import FileWriter
 
 try:
+    from src.image import (
+        affine_transform,
+        color_aug,
+        draw_dense_reg,
+        draw_msra_gaussian,
+        draw_umich_gaussian,
+        gaussian_radius,
+        get_affine_transform,
+    )
     from src.model_utils.config import config, dataset_config, net_config
     from src.model_utils.moxing_adapter import moxing_wrapper
-    from src.image import color_aug, get_affine_transform, affine_transform
-    from src.image import gaussian_radius, draw_umich_gaussian, draw_msra_gaussian, draw_dense_reg
-    from src.visual import visual_image
 except ImportError as import_error:
-    print('Import Error: {}, trying append path/centernet/src/../'.format(import_error))
+    print("Import Error: {}, trying append path/centernet/src/../".format(import_error))
     sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+    from src.image import (
+        affine_transform,
+        color_aug,
+        draw_dense_reg,
+        draw_msra_gaussian,
+        draw_umich_gaussian,
+        gaussian_radius,
+        get_affine_transform,
+    )
     from src.model_utils.config import config, dataset_config, net_config
     from src.model_utils.moxing_adapter import moxing_wrapper
-    from src.image import color_aug, get_affine_transform, affine_transform
-    from src.image import gaussian_radius, draw_umich_gaussian, draw_msra_gaussian, draw_dense_reg
-    from src.visual import visual_image
 
 _current_dir = os.path.dirname(os.path.realpath(__file__))
 cv2.setNumThreads(0)
@@ -46,7 +58,14 @@ class COCOHP:
         Prepocessed training or testing dataset for CenterNet network.
     """
 
-    def __init__(self, data_opt, run_mode="train", net_opt=None, enable_visual_image=False, save_path=None):
+    def __init__(
+        self,
+        data_opt,
+        run_mode="train",
+        net_opt=None,
+        enable_visual_image=False,
+        save_path=None,
+    ):
         # self._data_rng = np.random.RandomState(123)
         self._data_rng = np.random.RandomState(123)
         self.data_opt = data_opt
@@ -54,7 +73,11 @@ class COCOHP:
         self.std = self.data_opt.std.reshape(1, 1, 3)
         # self.pad = 127
         self.pad = 31  # if 'hourglass' in opt.arch else 31
-        assert run_mode in ["train", "test", "val"], "only train/test/val mode are supported"
+        assert run_mode in [
+            "train",
+            "test",
+            "val",
+        ], "only train/test/val mode are supported"
         self.run_mode = run_mode
 
         if net_opt is not None:
@@ -65,31 +88,23 @@ class COCOHP:
             if not os.path.exists(self.save_path):
                 os.makedirs(self.save_path)
 
-        self._valid_ids = [
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13,
-            14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-            24, 25, 27, 28, 31, 32, 33, 34, 35, 36,
-            37, 38, 39, 40, 41, 42, 43, 44, 46, 47,
-            48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-            58, 59, 60, 61, 62, 63, 64, 65, 67, 70,
-            72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
-            82, 84, 85, 86, 87, 88, 89, 90]
-        self.cat_ids = {v: i for i, v in enumerate(self._valid_ids)}
-
     def init(self, data_dir, keep_res=False):
         """initialize additional info"""
-        logger.info('Initializing coco 2017 {} data.'.format(self.run_mode))
+        logger.info("Initializing coco 2017 {} data.".format(self.run_mode))
         if not os.path.isdir(data_dir):
             raise RuntimeError("Invalid dataset path")
         if self.run_mode != "test":
-            self.annot_path = os.path.join(data_dir, 'annotations',
-                                           'instances_{}2017.json').format(self.run_mode)
+            self.annot_path = os.path.join(
+                data_dir, "annotations", "instances_{}2017.json"
+            ).format(self.run_mode)
         else:
-            self.annot_path = os.path.join(data_dir, 'annotations', 'image_info_test-dev2017.json')
+            self.annot_path = os.path.join(
+                data_dir, "annotations", "image_info_test-dev2017.json"
+            )
             # self.annot_path = os.path.join(data_dir, 'annotations', 'image_info_test2017.json')
-        self.image_path = os.path.join(data_dir, '{}2017').format(self.run_mode)
-        print('Image path: {}'.format(self.image_path))
-        print('Annotations: {}'.format(self.annot_path))
+        self.image_path = os.path.join(data_dir, "{}2017").format(self.run_mode)
+        print("Image path: {}".format(self.image_path))
+        print("Annotations: {}".format(self.annot_path))
 
         self.coco = coco.COCO(self.annot_path)
         image_ids = self.coco.getImgIds()
@@ -117,24 +132,31 @@ class COCOHP:
         self.num_samples = len(self.images)
         print("----num_samples ", self.num_samples)
         self.keep_res = keep_res
-        logger.info('Loaded {} {} samples'.format(self.run_mode, self.num_samples))
+        logger.info("Loaded {} {} samples".format(self.run_mode, self.num_samples))
 
     def __len__(self):
         return self.num_samples
 
     def _coco_box_to_bbox(self, box):
-        bbox = np.array([box[0], box[1], box[0] + box[2], box[1] + box[3]],
-                        dtype=np.float32)
+        bbox = np.array(
+            [box[0], box[1], box[0] + box[2], box[1] + box[3]], dtype=np.float32
+        )
         return bbox
 
-    def transfer_coco_to_mindrecord(self, mindrecord_dir, file_name="coco_det.train.mind", shard_num=1):
+    def transfer_coco_to_mindrecord(
+        self, mindrecord_dir, file_name="coco_det.train.mind", shard_num=1
+    ):
         """Create MindRecord file by image_dir and anno_path."""
         if not os.path.isdir(mindrecord_dir):
             os.makedirs(mindrecord_dir)
         if os.path.isdir(self.image_path) and os.path.exists(self.annot_path):
             logger.info("Create MindRecord based on COCO_HP dataset")
         else:
-            raise ValueError('data_dir {} or anno_path {} does not exist'.format(self.image_path, self.annot_path))
+            raise ValueError(
+                "data_dir {} or anno_path {} does not exist".format(
+                    self.image_path, self.annot_path
+                )
+            )
 
         mindrecord_path = os.path.join(mindrecord_dir, file_name)
         writer = FileWriter(mindrecord_path, shard_num)
@@ -154,27 +176,29 @@ class COCOHP:
             image_info = self.coco.loadImgs([img_id])
             annos = self.coco.loadAnns(self.anns[img_id])
             # get image
-            img_name = image_info[0]['file_name']
+            img_name = image_info[0]["file_name"]
             img_name = os.path.join(self.image_path, img_name)
-            with open(img_name, 'rb') as f:
+            with open(img_name, "rb") as f:
                 image = f.read()
 
             bboxes = []
             category_id = []
             num_objects = len(annos)
             for anno in annos:
-                bbox = self._coco_box_to_bbox(anno['bbox'])
+                bbox = self._coco_box_to_bbox(anno["bbox"])
                 class_name = self.classs_dict[anno["category_id"]]
                 if class_name in self.train_cls:
                     x_min, x_max = bbox[0], bbox[2]
                     y_min, y_max = bbox[1], bbox[3]
                     bboxes.append([x_min, y_min, x_max, y_max])
                     category_id.append(self.train_cls_dict[class_name])
-            row = {"img_id": np.array([img_id], dtype=np.int32),
-                   "image": image,
-                   "num_objects": num_objects,
-                   "bboxes": np.array(bboxes, np.float32),
-                   "category_id": np.array(category_id, np.int32)}
+            row = {
+                "img_id": np.array([img_id], dtype=np.int32),
+                "image": image,
+                "num_objects": num_objects,
+                "bboxes": np.array(bboxes, np.float32),
+                "category_id": np.array(category_id, np.int32),
+            }
             writer.write_raw_data([row])
 
         writer.commit()
@@ -188,7 +212,7 @@ class COCOHP:
 
     def __getitem__(self, index):
         img_id = self.images[index]
-        file_name = self.coco.loadImgs(ids=[img_id])[0]['file_name']
+        file_name = self.coco.loadImgs(ids=[img_id])[0]["file_name"]
         img_path = os.path.join(self.image_path, file_name)
         img = cv2.imread(img_path)
         if img is None:
@@ -210,18 +234,25 @@ class COCOHP:
             c = np.array([new_width // 2, new_height // 2], dtype=np.float32)
             s = np.array([inp_width, inp_height], dtype=np.float32)
         else:
-            inp_height, inp_width = self.data_opt.input_res_test[0], self.data_opt.input_res_test[1]
-            c = np.array([new_width / 2., new_height / 2.], dtype=np.float32)
+            inp_height, inp_width = (
+                self.data_opt.input_res_test[0],
+                self.data_opt.input_res_test[1],
+            )
+            c = np.array([new_width / 2.0, new_height / 2.0], dtype=np.float32)
             s = max(height, width) * 1.0
         trans_input = get_affine_transform(c, s, 0, [inp_width, inp_height])
         resized_image = cv2.resize(image, (new_width, new_height))
-        inp_image = cv2.warpAffine(resized_image, trans_input, (inp_width, inp_height),
-                                   flags=cv2.INTER_LINEAR)
-        inp_img = (inp_image.astype(np.float32) / 255. - self.mean) / self.std
+        inp_image = cv2.warpAffine(
+            resized_image, trans_input, (inp_width, inp_height), flags=cv2.INTER_LINEAR
+        )
+        inp_img = (inp_image.astype(np.float32) / 255.0 - self.mean) / self.std
         eval_image = inp_img.transpose(2, 0, 1).reshape(1, 3, inp_height, inp_width)
-        meta = {'c': c, 's': s,
-                'out_height': inp_height // self.net_opt.down_ratio,
-                'out_width': inp_width // self.net_opt.down_ratio}
+        meta = {
+            "c": c,
+            "s": s,
+            "out_height": inp_height // self.net_opt.down_ratio,
+            "out_width": inp_width // self.net_opt.down_ratio,
+        }
         return eval_image, meta
 
     def create_eval_dataset(self, batch_size=1, num_parallel_workers=1):
@@ -233,7 +264,9 @@ class COCOHP:
 
         column = ["image", "image_id"]
         data_set = ds.GeneratorDataset(generator, column, num_parallel_workers=1)
-        data_set = data_set.batch(batch_size, drop_remainder=True, num_parallel_workers=1)
+        data_set = data_set.batch(
+            batch_size, drop_remainder=True, num_parallel_workers=1
+        )
         return data_set
 
     def preprocess_fn(self, image, num_objects, bboxes, category_id):
@@ -242,11 +275,14 @@ class COCOHP:
         image = np.frombuffer(image, dtype=np.uint8)
         img = cv2.imdecode(image, cv2.IMREAD_COLOR)
 
-        height, width = img.shape[0], img.shape[1]
-        c = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+        _, width = img.shape[0], img.shape[1]
+        c = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
 
         s = max(img.shape[0], img.shape[1]) * 1.0
-        input_h, input_w = self.data_opt.input_res_train[0], self.data_opt.input_res_train[1]
+        input_h, input_w = (
+            self.data_opt.input_res_train[0],
+            self.data_opt.input_res_train[1],
+        )
 
         flipped = False
 
@@ -268,13 +304,12 @@ class COCOHP:
             img = img[:, ::-1, :]
             c[0] = width - c[0] - 1
 
-        trans_input = get_affine_transform(
-            c, s, 0, [input_w, input_h])
-        inp = cv2.warpAffine(img, trans_input,
-                             (input_w, input_h),
-                             flags=cv2.INTER_LINEAR)
-        inp = (inp.astype(np.float32) / 255.)
-        if self.run_mode == 'train' and self.data_opt.color_aug:
+        trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
+        inp = cv2.warpAffine(
+            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR
+        )
+        inp = inp.astype(np.float32) / 255.0
+        if self.run_mode == "train" and self.data_opt.color_aug:
             color_aug(self._data_rng, inp, self.data_opt.eig_val, self.data_opt.eig_vec)
         inp = (inp - self.mean) / self.std
         inp = inp.transpose(2, 0, 1)
@@ -293,7 +328,9 @@ class COCOHP:
         cat_spec_wh = np.zeros((max_objs, num_classes * 2), dtype=np.float32)
         cat_spec_mask = np.zeros((max_objs, num_classes * 2), dtype=np.uint8)
 
-        draw_gaussian = draw_msra_gaussian if self.net_opt.mse_loss else draw_umich_gaussian
+        draw_gaussian = (
+            draw_msra_gaussian if self.net_opt.mse_loss else draw_umich_gaussian
+        )
 
         gt_det = []
         for k in range(num_objs):
@@ -310,38 +347,57 @@ class COCOHP:
                 radius = gaussian_radius((math.ceil(h), math.ceil(w)))
                 radius = max(0, int(radius))
                 ct = np.array(
-                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], dtype=np.float32)
+                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], dtype=np.float32
+                )
                 ct_int = ct.astype(np.int32)
                 draw_gaussian(hm[cls_id], ct_int, radius)
-                wh[k] = 1. * w, 1. * h
+                wh[k] = 1.0 * w, 1.0 * h
                 ind[k] = ct_int[1] * output_w + ct_int[0]
                 reg[k] = ct - ct_int
                 reg_mask[k] = 1
-                cat_spec_wh[k, cls_id * 2: cls_id * 2 + 2] = wh[k]
-                cat_spec_mask[k, cls_id * 2: cls_id * 2 + 2] = 1
+                cat_spec_wh[k, cls_id * 2 : cls_id * 2 + 2] = wh[k]
+                cat_spec_mask[k, cls_id * 2 : cls_id * 2 + 2] = 1
                 if self.net_opt.dense_wh:
                     draw_dense_reg(dense_wh, hm.max(axis=0), ct_int, wh[k], radius)
-                gt_det.append([ct[0] - w / 2, ct[1] - h / 2,
-                               ct[0] + w / 2, ct[1] + h / 2, 1, cls_id])
+                gt_det.append(
+                    [
+                        ct[0] - w / 2,
+                        ct[1] - h / 2,
+                        ct[0] + w / 2,
+                        ct[1] + h / 2,
+                        1,
+                        cls_id,
+                    ]
+                )
 
-        ret = {'input': inp, 'hm': hm, 'reg_mask': reg_mask, 'ind': ind, 'wh': wh}
+        ret = {"input": inp, "hm": hm, "reg_mask": reg_mask, "ind": ind, "wh": wh}
         if self.net_opt.dense_wh:
             hm_a = hm.max(axis=0, keepdims=True)
             dense_wh_mask = np.concatenate([hm_a, hm_a], axis=0)
-            ret.update({'dense_wh': dense_wh, 'dense_wh_mask': dense_wh_mask})
-            del ret['wh']
+            ret.update({"dense_wh": dense_wh, "dense_wh_mask": dense_wh_mask})
+            del ret["wh"]
         elif self.net_opt.cat_spec_wh:
-            ret.update({'cat_spec_wh': cat_spec_wh, 'cat_spec_mask': cat_spec_mask})
-            del ret['wh']
+            ret.update({"cat_spec_wh": cat_spec_wh, "cat_spec_mask": cat_spec_mask})
+            del ret["wh"]
         if self.net_opt.reg_offset:
-            ret.update({'reg': reg})
+            ret.update({"reg": reg})
         return inp, hm, reg_mask, ind, wh, reg
 
-    def create_train_dataset(self, mindrecord_dir, prefix="coco_det.train.mind", batch_size=1,
-                             device_num=1, rank=0, num_parallel_workers=1, do_shuffle=True):
+    def create_train_dataset(
+        self,
+        mindrecord_dir,
+        prefix="coco_det.train.mind",
+        batch_size=1,
+        device_num=1,
+        rank=0,
+        num_parallel_workers=1,
+        do_shuffle=True,
+    ):
         """create train dataset based on mindrecord file"""
         if not os.path.isdir(mindrecord_dir):
-            raise ValueError('MindRecord data_dir {} does not exist'.format(mindrecord_dir))
+            raise ValueError(
+                "MindRecord data_dir {} does not exist".format(mindrecord_dir)
+            )
 
         files = os.listdir(mindrecord_dir)
         data_files = []
@@ -349,33 +405,52 @@ class COCOHP:
             if prefix in file_name and "db" not in file_name:
                 data_files.append(os.path.join(mindrecord_dir, file_name))
         if not data_files:
-            raise ValueError('data_dir {} have no data files'.format(mindrecord_dir))
+            raise ValueError("data_dir {} have no data files".format(mindrecord_dir))
 
         columns = ["img_id", "image", "num_objects", "bboxes", "category_id"]
-        data_set = ds.MindDataset(data_files,
-                                  columns_list=columns,
-                                  num_parallel_workers=num_parallel_workers, shuffle=do_shuffle,
-                                  num_shards=device_num, shard_id=rank)
+        data_set = ds.MindDataset(
+            data_files,
+            columns_list=columns,
+            num_parallel_workers=num_parallel_workers,
+            shuffle=do_shuffle,
+            num_shards=device_num,
+            shard_id=rank,
+        )
         ori_dataset_size = data_set.get_dataset_size()
-        logger.info('origin dataset size: {}'.format(ori_dataset_size))
+        logger.info("origin dataset size: {}".format(ori_dataset_size))
 
-        data_set = data_set.map(operations=self.preprocess_fn,
-                                input_columns=["image", "num_objects", "bboxes", "category_id"],
-                                output_columns=["image", "hm", "reg_mask", "ind", "wh", "reg"],
-                                num_parallel_workers=num_parallel_workers,
-                                python_multiprocessing=True)
+        data_set = data_set.map(
+            operations=self.preprocess_fn,
+            input_columns=["image", "num_objects", "bboxes", "category_id"],
+            output_columns=["image", "hm", "reg_mask", "ind", "wh", "reg"],
+            num_parallel_workers=num_parallel_workers,
+            python_multiprocessing=True,
+        )
         data_set = data_set.project(["image", "hm", "reg_mask", "ind", "wh", "reg"])
-        data_set = data_set.batch(batch_size, drop_remainder=True, num_parallel_workers=8)
+        data_set = data_set.batch(
+            batch_size, drop_remainder=True, num_parallel_workers=8
+        )
         logger.info("data size: {}".format(data_set.get_dataset_size()))
         logger.info("repeat count: {}".format(data_set.get_repeat_count()))
         return data_set
 
 
 def build_dataloader(generator, batch_size, num_parallel_workers=1, do_shuffle=True):
-    column = ["inputs", "center_heatmap_target", 'wh_target', 'offset_target', 'wh_offset_target_weight',
-              'img_input_shape']
-    data_set = ds.GeneratorDataset(generator, column, num_parallel_workers=num_parallel_workers, shuffle=True,
-                                   max_rowsize=12)
+    column = [
+        "inputs",
+        "center_heatmap_target",
+        "wh_target",
+        "offset_target",
+        "wh_offset_target_weight",
+        "img_input_shape",
+    ]
+    data_set = ds.GeneratorDataset(
+        generator,
+        column,
+        num_parallel_workers=num_parallel_workers,
+        shuffle=True,
+        max_rowsize=12,
+    )
     data_set = data_set.batch(batch_size, drop_remainder=True, num_parallel_workers=8)
     return data_set
 
@@ -391,8 +466,10 @@ def coco2mindrecord():
     """Convert coco2017 dataset to mindrecord"""
     dsc = COCOHP(dataset_config, run_mode="train", net_opt=net_config)
     dsc.init(config.coco_data_dir)
-    dsc.transfer_coco_to_mindrecord(config.mindrecord_dir, config.mindrecord_prefix, shard_num=8)
+    dsc.transfer_coco_to_mindrecord(
+        config.mindrecord_dir, config.mindrecord_prefix, shard_num=8
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     coco2mindrecord()

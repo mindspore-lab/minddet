@@ -2,11 +2,13 @@
 
 ## description
 
-The number of Ascend accelerators can be automatically allocated based on the device_num set in hccl config file, You don not need to specify that.
+The number of Ascend accelerators can be automatically allocated based on the device_num set in hccl config file, You
+don not need to specify that.
 
 ## how to use
 
-For example, if we want to generate the launch command of the distributed training of CenterNet model on Ascend accelerators, we can run the following command in `/centernet_det/` dir:
+For example, if we want to generate the launch command of the distributed training of CenterNet model on Ascend
+accelerators, we can run the following command in `/centernet_det/` dir:
 
 ```python
 python ./scripts/ascend_distributed_launcher/get_distribute_pretrain_cmd.py --run_script_dir ./train.py --hyper_parameter_config_dir ./scripts/ascend_distributed_launcher/hyper_parameter_config.ini --data_dir /path/dataset/ --mindrecord_dir /path/mindrecord_dataset/ --hccl_config_dir model_zoo/utils/hccl_tools/hccl_2p_56_x.x.x.x.json
@@ -41,11 +43,14 @@ log file dir: ./LOG6/training_log.txt
 
 ## Note
 
-1. Note that `hccl_2p_56_x.x.x.x.json` can use [hccl_tools.py](https://gitee.com/mindspore/models/tree/master/utils/hccl_tools) to generate.
+1. Note that `hccl_2p_56_x.x.x.x.json` can
+   use [hccl_tools.py](https://gitee.com/mindspore/models/tree/master/utils/hccl_tools) to generate.
 
-2. For hyper parameter, please note that you should customize the scripts `hyper_parameter_config.ini`. Please note that these two hyper parameters are not allowed to be configured here:
+2. For hyper parameter, please note that you should customize the scripts `hyper_parameter_config.ini`. Please note that
+   these two hyper parameters are not allowed to be configured here:
     - device_id
     - device_num
     - data_dir
 
-3. For Other Model, please note that you should customize the option `run_script` and Corresponding `hyper_parameter_config.ini`.
+3. For Other Model, please note that you should customize the option `run_script` and
+   Corresponding `hyper_parameter_config.ini`.

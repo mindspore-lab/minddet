@@ -16,7 +16,8 @@
 
 # [CenterNet 描述](#contents)
 
-CenterNet 是一种新颖实用的无锚点方法，用于对象检测、3D 检测和姿态估计，可检测将对象识别为图像中轴对齐的框。检测器使用关键点估计来查找中心点，并回归到所有其他对象属性，例如大小、3D 位置、方向甚至姿势。在本质上，它是一种单阶段方法，相较于其他同类网络，CenterNet可以同时预测中心点和边框，并有着出更快更准确的表现
+CenterNet 是一种新颖实用的无锚点方法，用于对象检测、3D 检测和姿态估计，可检测将对象识别为图像中轴对齐的框。检测器使用关键点估计来查找中心点，并回归到所有其他对象属性，例如大小、3D
+位置、方向甚至姿势。在本质上，它是一种单阶段方法，相较于其他同类网络，CenterNet可以同时预测中心点和边框，并有着出更快更准确的表现
 
 [Paper](https://arxiv.org/pdf/1904.07850.pdf): Objects as Points. 2019.
 Xingyi Zhou(UT Austin) and Dequan Wang(UC Berkeley) and Philipp Krahenbuhl(UT Austin)
@@ -32,7 +33,7 @@ Xingyi Zhou(UT Austin) and Dequan Wang(UC Berkeley) and Philipp Krahenbuhl(UT Au
 使用数据集: [COCO2017](https://cocodataset.org/)
 
 - 数据集大小：26G
-    - 训练集：19G，118000 images  
+    - 训练集：19G，118000 images
     - 评估集：0.8G，5000 images
     - 测试集: 6.3G, 40000 images
     - 标注数据：808M，instances，captions etc
@@ -72,7 +73,7 @@ Xingyi Zhou(UT Austin) and Dequan Wang(UC Berkeley) and Philipp Krahenbuhl(UT Au
 - 硬件（Ascend）
     - 910系列昇腾卡
 - 框架
-    MindSpore 2.3.0
+  MindSpore 2.3.0
     - [MindSpore](https://www.mindspore.cn/install/en)
 - 更多关于mindspore的教程可以参考下面文档
     - [MindSpore tutorials](https://www.mindspore.cn/tutorials/zh-CN/r2.2/index.html)
@@ -80,7 +81,7 @@ Xingyi Zhou(UT Austin) and Dequan Wang(UC Berkeley) and Philipp Krahenbuhl(UT Au
 - 我们使用COCO2017作为实验数据集.
 
     1. 如果使用 coco 数据集。运行脚本时选择要coco的数据集。
-        安装 Cython and pycocotool
+       安装 Cython and pycocotool
 
         ```pip
         pip install Cython
@@ -88,10 +89,10 @@ Xingyi Zhou(UT Austin) and Dequan Wang(UC Berkeley) and Philipp Krahenbuhl(UT Au
         pip install pycocotools
         ```
 
-        并更改`default_config.yaml`中需要的COCO_ROOT和其他设置. 目录结构如下:
+       并更改`default_config.yaml`中需要的COCO_ROOT和其他设置. 目录结构如下:
 
         ```path
-        ├── data    
+        ├── data
             └─coco
                 ├─annotations
                     ├─instance_train2017.json
@@ -102,18 +103,19 @@ Xingyi Zhou(UT Austin) and Dequan Wang(UC Berkeley) and Philipp Krahenbuhl(UT Au
         ```
 
     2. 如果使用自己的数据集。运行脚本时选择数据集到其他数据集。
-        数据集信息的组织格式与COCO相同。
+       数据集信息的组织格式与COCO相同。
 
 # [快速开始](#contents)
 
 - 本地运行
 
-    通过官网安装好MindSpore之后，可以按照下列步骤开始运行
+  通过官网安装好MindSpore之后，可以按照下列步骤开始运行
 
-    注意:
-    1.MINDRECORD_DATASET_PATH 是mindrecord 数据目录.
-    2.对于 `train.py`, LOAD_CHECKPOINT_PATH 是预训练好的或者需要resume的CenterNet模型ckpt，一般设置为" "；如果想要基于预训练好的backbone进行训练，需要设置'default_config.yaml'中的'load_backbone_path'.
-    3.对于 `eval.py`, LOAD_CHECKPOINT_PATH 是需要进行评估的ckpt.
+  注意:
+  1.MINDRECORD_DATASET_PATH 是mindrecord 数据目录.
+  2.对于 `train.py`, LOAD_CHECKPOINT_PATH 是预训练好的或者需要resume的CenterNet模型ckpt，一般设置为" "
+  ；如果想要基于预训练好的backbone进行训练，需要设置'default_config.yaml'中的'load_backbone_path'.
+  3.对于 `eval.py`, LOAD_CHECKPOINT_PATH 是需要进行评估的ckpt.
 
     ```shell
     cd minddet/models/centernet
@@ -338,7 +340,9 @@ bash scripts/convert_dataset_to_mindrecord.sh /path/coco_dataset_dir /path/mindr
 bash scripts/run_distributed_train_ascend.sh /path/mindrecord_dataset /path/hccl.json /path/load_ckpt(optional)
 ```
 
-上面的命令将在后台运行，您可以在 LOG*/training_log.txt 和 LOG*/ms_log/ 中查看训练日志。训练完成后，默认情况下，你将在 LOG*/ckpt_0 文件夹下获得ckpt。loss值将显示如下
+上面的命令将在后台运行，您可以在 LOG*/training_log.txt 和 LOG*/ms_log/ 中查看训练日志。训练完成后，默认情况下，你将在 LOG*
+/ckpt_0 文件夹下获得ckpt。loss值将显示如下
+
 ```text
 # grep "epoch" LOG0/training_log.txt
 epoch: 139 | current epoch percent: 0.988 | step: 128229 | loss 2.2666364 | overflow False | scaling_sens 1024.0 | lr 5e-06
@@ -354,16 +358,21 @@ epoch: 139 | current epoch percent: 0.998 | step: 128238 | loss 1.8683317 | over
 epoch: 139 | current epoch percent: 0.999 | step: 128239 | loss 1.4165485 | overflow False | scaling_sens 1024.0 | lr 5e-06
 ```
 
-如果想基于官方提供的预训练好的resnet18进行训练, 下载ckpt [models](https://download.pytorch.org/models/resnet18-5c106cde.pth), 然后执行下列命令进行权重转换：
+如果想基于官方提供的预训练好的resnet18进行训练,
+下载ckpt [models](https://download.pytorch.org/models/resnet18-5c106cde.pth), 然后执行下列命令进行权重转换：
+
 ```python
 python tools/convert_resnet18.py -ckpt_file ckpt_file --torch_name_file torch_name --ms_name_file ms_name --output_file output_file
 ```
+
 设置'default_config.yaml'中的'load_backbone_path'，执行训练脚本
 
 ## [推理](#contents)
 
 ### 评估
+
 CenterNet使用NMS进行后处理，需要先安装nms
+
 ```shell
     git clone https://github.com/xingyizhou/CenterNet.git
     cd CenterNet/src/lib/external/
@@ -372,6 +381,7 @@ CenterNet使用NMS进行后处理，需要先安装nms
     cd - || exit
     rm -rf CenterNet
 ```
+
 ```shell
 # Evaluation base on validation dataset
 # On Ascend
@@ -402,34 +412,34 @@ overall performance on coco2017 validation dataset
 
 CenterNet on 11.8K images(The annotation and data format must be the same as coco)
 
-| Parameters             | CenterNet_ResNet18_DCN                                           |
-| ---------------------- | ------------------------------------------------------------ |
-| Resource               | Ascend 910; CPU 2.60GHz, 192cores; Memory, 1511G              |
-| uploaded Date          | 03/08/2024 (month/day/year)                                  |
-| MindSpore Version      | 2.3.0                                                        |
-| Dataset                | COCO2017/train2017                                                     |
-| Training Parameters    | 8p, epoch=140, steps=128240, batch_size = 16, lr=5e-4      |
-| Optimizer              | Adam                                                         |
-| Loss Function          | Focal Loss, L1 Loss, RegLoss                                 |
-| outputs                | detections                                                   |
-| Loss                   | 1.5-2.0                                                      |
-| Speed                  | 8p 590 img/s                                                  |
-| Total time: training   | 8p: 8 h                                                     |
-| Checkpoint             | 166MB (.ckpt file)                                           |
-| Scripts                | run_distributed_train_ascend.sh                                          |
+| Parameters           | CenterNet_ResNet18_DCN                                |
+|----------------------|-------------------------------------------------------|
+| Resource             | Ascend 910; CPU 2.60GHz, 192cores; Memory, 1511G      |
+| uploaded Date        | 03/08/2024 (month/day/year)                           |
+| MindSpore Version    | 2.3.0                                                 |
+| Dataset              | COCO2017/train2017                                    |
+| Training Parameters  | 8p, epoch=140, steps=128240, batch_size = 16, lr=5e-4 |
+| Optimizer            | Adam                                                  |
+| Loss Function        | Focal Loss, L1 Loss, RegLoss                          |
+| outputs              | detections                                            |
+| Loss                 | 1.5-2.0                                               |
+| Speed                | 8p 590 img/s                                          |
+| Total time: training | 8p: 8 h                                               |
+| Checkpoint           | 166MB (.ckpt file)                                    |
+| Scripts              | run_distributed_train_ascend.sh                       |
 
 ### I昇腾910上的推理结果
 
 CenterNet on validation(5K images)
 
-| Parameters           | CenterNet_ResNet18_DCN                                           |
-| -------------------- | ------------------------------------------------------------ |
-| Resource             | Ascend 910; CPU 2.60GHz, 192cores; Memory, 1511G             |
-| uploaded Date        | 03/08/2024 (month/day/year)                                  |
-| MindSpore Version    | 2.3.0                                                        |
-| Dataset              | COCO2017/val2017                                                     |
-| batch_size           | 1                                                            |
-| outputs              | mAP                                                          |
+| Parameters           | CenterNet_ResNet18_DCN                                            |
+|----------------------|-------------------------------------------------------------------|
+| Resource             | Ascend 910; CPU 2.60GHz, 192cores; Memory, 1511G                  |
+| uploaded Date        | 03/08/2024 (month/day/year)                                       |
+| MindSpore Version    | 2.3.0                                                             |
+| Dataset              | COCO2017/val2017                                                  |
+| batch_size           | 1                                                                 |
+| outputs              | mAP                                                               |
 | Accuracy(validation) | MAP: 28.7%, AP50: 47.2%, AP75: 29.3%, Medium: 31.5%, Large: 42.6% |
 
 # [随机情况的说明](#contents)
@@ -438,4 +448,3 @@ In run_distributed_train_ascend.sh, we set do_shuffle to True to shuffle the dat
 In train.py, we set a random seed to make sure that each node has the same initial weight in distribute training.
 
 # FAQ
-

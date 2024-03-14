@@ -1,30 +1,23 @@
 """
 CenterNet for training and evaluation
 """
-import time
-
+import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
-from mindspore import context
-from mindspore import amp
-from mindspore.ops import operations as P
+from mindspore import amp, context
 from mindspore import dtype as mstype
+from mindspore.common.initializer import Constant, Normal
 from mindspore.common.tensor import Tensor
-from mindspore.context import ParallelMode
-from mindspore.common.initializer import Constant
 from mindspore.communication.management import get_group_size
+from mindspore.context import ParallelMode
 from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
-from src.utils import Sigmoid, GradScale
-from src.utils import FocalLoss, RegLoss
-from src.decode import DetectionDecode
-from src.resnet import BasicBlock, ResNet, ModulatedDeformConv2d
-from .model_utils.config import dataset_config as data_cfg
-import mindspore as ms
-from mindspore.ops import Print
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
 from mindspore.ops import composite as C
-from mindspore.common.initializer import Normal
+from src.decode import DetectionDecode
+from src.resnet import BasicBlock, ModulatedDeformConv2d, ResNet
+from src.utils import FocalLoss, GradScale, RegLoss, Sigmoid
+
+from .model_utils.config import dataset_config as data_cfg
+
 BN_MOMENTUM = 0.9
 
 GRADIENT_CLIP_TYPE = 2
@@ -38,16 +31,40 @@ def _generate_feature(cin, cout, kernel_size, head_name, head_conv=0):
     Generate ResNet feature extraction function of each target head
     """
     fc = None
-    if 'hm' in head_name:
-        conv2d = nn.Conv2d(head_conv, cout, kernel_size=kernel_size, has_bias=True, bias_init=Constant(-2.19))
-        fc = nn.SequentialCell([nn.Conv2d(cin, head_conv, kernel_size=3, has_bias=True), nn.ReLU(), conv2d])
+    if "hm" in head_name:
+        conv2d = nn.Conv2d(
+            head_conv,
+            cout,
+            kernel_size=kernel_size,
+            has_bias=True,
+            bias_init=Constant(-2.19),
+        )
+        fc = nn.SequentialCell(
+            [nn.Conv2d(cin, head_conv, kernel_size=3, has_bias=True), nn.ReLU(), conv2d]
+        )
     else:
         layers = []
-        layers.append(nn.Conv2d(cin, head_conv, kernel_size=3, has_bias=True, weight_init=Normal(0.001),
-                                bias_init=Constant(0)))
+        layers.append(
+            nn.Conv2d(
+                cin,
+                head_conv,
+                kernel_size=3,
+                has_bias=True,
+                weight_init=Normal(0.001),
+                bias_init=Constant(0),
+            )
+        )
         layers.append(nn.ReLU())
-        layers.append(nn.Conv2d(head_conv, cout, kernel_size=kernel_size, has_bias=True, weight_init=Normal(0.001),
-                                bias_init=Constant(0)))
+        layers.append(
+            nn.Conv2d(
+                head_conv,
+                cout,
+                kernel_size=kernel_size,
+                has_bias=True,
+                weight_init=Normal(0.001),
+                bias_init=Constant(0),
+            )
+        )
         fc = nn.SequentialCell(layers)
     return fc
 
@@ -72,9 +89,9 @@ class GatherDetectionFeatureCell(nn.Cell):
 
     def __init__(self, net_config, is_train=False):
         super(GatherDetectionFeatureCell, self).__init__()
-        heads = {'hm': data_cfg.num_classes, 'wh': 2}
+        heads = {"hm": data_cfg.num_classes, "wh": 2}
         if net_config.reg_offset:
-            heads.update({'reg': 2})
+            heads.update({"reg": 2})
         head_conv = net_config.head_conv
         self.backbone = resnet18(is_train, net_config.load_backbone_path)
 
@@ -85,13 +102,20 @@ class GatherDetectionFeatureCell(nn.Cell):
             num_kernels=[4, 4, 4],
         )
 
-        self.hm_fn = _generate_feature(cin=64, cout=heads['hm'], kernel_size=1,
-                                       head_name='hm', head_conv=head_conv)
-        self.wh_fn = _generate_feature(cin=64, cout=heads['wh'], kernel_size=1,
-                                       head_name='wh', head_conv=head_conv)
+        self.hm_fn = _generate_feature(
+            cin=64, cout=heads["hm"], kernel_size=1, head_name="hm", head_conv=head_conv
+        )
+        self.wh_fn = _generate_feature(
+            cin=64, cout=heads["wh"], kernel_size=1, head_name="wh", head_conv=head_conv
+        )
         if net_config.reg_offset:
-            self.reg_fn = _generate_feature(cin=64, cout=heads['reg'], kernel_size=1,
-                                            head_name='reg', head_conv=head_conv)
+            self.reg_fn = _generate_feature(
+                cin=64,
+                cout=heads["reg"],
+                kernel_size=1,
+                head_name="reg",
+                head_conv=head_conv,
+            )
         self.reg_offset = net_config.reg_offset
         self.not_enable_mse_loss = not net_config.mse_loss
         self.Sigmoid = Sigmoid()
@@ -113,13 +137,20 @@ class GatherDetectionFeatureCell(nn.Cell):
         for i in range(num_layers):
             kernel = num_kernels[i]
             cout = num_filters[i]
-            conv_module = ModulatedDeformConv2d(cin, cout, kernel_size=3, padding=1, has_bias=False)
+            conv_module = ModulatedDeformConv2d(
+                cin, cout, kernel_size=3, padding=1, has_bias=False
+            )
             layers.append(conv_module)
             layers.append(nn.BatchNorm2d(cout))
             layers.append(nn.ReLU())
-            up = nn.Conv2dTranspose(in_channels=cout, out_channels=cout,
-                                    kernel_size=kernel, stride=2,
-                                    pad_mode='pad', padding=1)
+            up = nn.Conv2dTranspose(
+                in_channels=cout,
+                out_channels=cout,
+                kernel_size=kernel,
+                stride=2,
+                pad_mode="pad",
+                padding=1,
+            )
 
             layers.append(up)
             layers.append(nn.BatchNorm2d(cout))
@@ -134,11 +165,11 @@ class GatherDetectionFeatureCell(nn.Cell):
         output = self.deconv_layers(output[-1])
         feature = ()
         out = {}
-        out['hm'] = self.hm_fn(output)
-        out['hm'] = self.Sigmoid(out['hm'])
-        out['wh'] = self.wh_fn(output)
+        out["hm"] = self.hm_fn(output)
+        out["hm"] = self.Sigmoid(out["hm"])
+        out["wh"] = self.wh_fn(output)
         if self.reg_offset:
-            out['reg'] = self.reg_fn(output)
+            out["reg"] = self.reg_fn(output)
         feature += (out,)
         return feature
 
@@ -184,16 +215,22 @@ class CenterNetLossCell(nn.Cell):
             #     output_hm = self.Sigmoid(output['hm'])
             # else:
             # TODO 对比mmdet, sigmoid放到construct中
-            output_hm = output['hm']
+            output_hm = output["hm"]
             hm_loss += self.crit(output_hm, hm) / self.num_stacks
 
-            output_wh = output['wh']
+            output_wh = output["wh"]
             wh_loss += self.crit_reg(output_wh, reg_mask, ind, wh) / self.num_stacks
 
             if self.reg_offset and self.off_weight > 0:
-                output_reg = output['reg']
-                off_loss += self.crit_reg(output_reg, reg_mask, ind, reg) / self.num_stacks
-        total_loss = (self.hm_weight * hm_loss + self.wh_weight * wh_loss + self.off_weight * off_loss)
+                output_reg = output["reg"]
+                off_loss += (
+                    self.crit_reg(output_reg, reg_mask, ind, reg) / self.num_stacks
+                )
+        total_loss = (
+            self.hm_weight * hm_loss
+            + self.wh_weight * wh_loss
+            + self.off_weight * off_loss
+        )
         self.print(hm_loss)
         self.print(wh_loss)
         self.print(off_loss)
@@ -290,14 +327,19 @@ class CenterNetWithLossScaleCell(nn.Cell):
         self.reducer_flag = False
         self.allreduce = ops.AllReduce()
         self.parallel_mode = context.get_auto_parallel_context("parallel_mode")
-        if self.parallel_mode in [ParallelMode.DATA_PARALLEL, ParallelMode.HYBRID_PARALLEL]:
+        if self.parallel_mode in [
+            ParallelMode.DATA_PARALLEL,
+            ParallelMode.HYBRID_PARALLEL,
+        ]:
             self.reducer_flag = True
         self.grad_reducer = ops.identity
         self.degree = 1
         if self.reducer_flag:
             self.degree = get_group_size()
-            self.grad_reducer = DistributedGradReducer(optimizer.parameters, False, self.degree)
-        self.is_distributed = (self.parallel_mode != ParallelMode.STAND_ALONE)
+            self.grad_reducer = DistributedGradReducer(
+                optimizer.parameters, False, self.degree
+            )
+        self.is_distributed = self.parallel_mode != ParallelMode.STAND_ALONE
         self.cast = ops.Cast()
         self.reduce_sum = ops.ReduceSum(keep_dims=False)
         self.base = Tensor(1, mstype.float32)
@@ -314,7 +356,9 @@ class CenterNetWithLossScaleCell(nn.Cell):
         loss = self.network(image, hm, reg_mask, ind, wh, reg)
         scaling_sens = self.cast(self.loss_scale, mstype.float32) * 2.0 / 2.0
         # alloc status and clear should be right before gradoperation
-        grads = self.grad(self.network, weights)(image, hm, reg_mask, ind, wh, reg, scaling_sens)
+        grads = self.grad(self.network, weights)(
+            image, hm, reg_mask, ind, wh, reg, scaling_sens
+        )
         grads = self.grad_reducer(grads)
         grads = self.grad_scale(scaling_sens * self.degree, grads)
         overflow = ops.logical_not(amp.all_finite(grads))
@@ -353,4 +397,3 @@ class CenterNetDetEval(nn.Cell):
         features = output[-1]
         detections = self.decode(features)
         return detections
-

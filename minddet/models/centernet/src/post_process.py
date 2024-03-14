@@ -2,26 +2,29 @@
 Post-process functions after decoding
 """
 import numpy as np
-from .image import get_affine_transform, affine_transform, transform_preds
+
+from .image import affine_transform, get_affine_transform, transform_preds
 from .visual import coco_box_to_bbox
 
 
 def post_process(dets, meta, scale, num_classes):
     """rescale detection to original scale"""
-    c, s, h, w = meta['c'], meta['s'], meta['out_height'], meta['out_width']
+    c, s, h, w = meta["c"], meta["s"], meta["out_height"], meta["out_width"]
     ret = []
     for i in range(dets.shape[0]):
         top_preds = {}
-        dets[i, :, :2] = transform_preds(
-            dets[i, :, 0:2], c, s, (w, h))
-        dets[i, :, 2:4] = transform_preds(
-            dets[i, :, 2:4], c, s, (w, h))
+        dets[i, :, :2] = transform_preds(dets[i, :, 0:2], c, s, (w, h))
+        dets[i, :, 2:4] = transform_preds(dets[i, :, 2:4], c, s, (w, h))
         classes = dets[i, :, -1]
         for j in range(num_classes):
-            inds = (classes == j)
-            top_preds[j + 1] = np.concatenate([
-                dets[i, inds, :4].astype(np.float32),
-                dets[i, inds, 4:5].astype(np.float32)], axis=1).tolist()
+            inds = classes == j
+            top_preds[j + 1] = np.concatenate(
+                [
+                    dets[i, inds, :4].astype(np.float32),
+                    dets[i, inds, 4:5].astype(np.float32),
+                ],
+                axis=1,
+            ).tolist()
         ret.append(top_preds)
 
     for j in range(1, num_classes + 1):
@@ -36,9 +39,11 @@ def merge_outputs(detections, num_classes, SOFT_NMS=True):
     max_per_image = 100
     for j in range(1, num_classes + 1):
         results[j] = np.concatenate(
-            [detection[j] for detection in detections], axis=0).astype(np.float32)
+            [detection[j] for detection in detections], axis=0
+        ).astype(np.float32)
         if SOFT_NMS:
             from nms import soft_nms
+
             # try:
             #     from nms import soft_nms
             # except ImportError:
@@ -46,13 +51,12 @@ def merge_outputs(detections, num_classes, SOFT_NMS=True):
             #           'and see run_standalone_eval.sh for more details to install it\n')
             soft_nms(results[j], Nt=0.5, threshold=0.001, method=2)
 
-    scores = np.hstack(
-        [results[j][:, 4] for j in range(1, num_classes + 1)])
+    scores = np.hstack([results[j][:, 4] for j in range(1, num_classes + 1)])
     if len(scores) > max_per_image:
         kth = len(scores) - max_per_image
         thresh = np.partition(scores, kth)[kth]
         for j in range(1, num_classes + 1):
-            keep_inds = (results[j][:, 4] >= thresh)
+            keep_inds = results[j][:, 4] >= thresh
             results[j] = results[j][keep_inds]
     return results
 
@@ -88,7 +92,7 @@ def to_float(x):
 def resize_detection(detection, pred, gt):
     """resize object annotation info"""
     height, width = gt[0], gt[1]
-    c = np.array([pred[1] / 2., pred[0] / 2.], dtype=np.float32)
+    c = np.array([pred[1] / 2.0, pred[0] / 2.0], dtype=np.float32)
     s = max(pred[0], pred[1]) * 1.0
     trans_output = get_affine_transform(c, s, 0, [width, height])
 
@@ -97,7 +101,7 @@ def resize_detection(detection, pred, gt):
     resized_detection = {"images": detection["images"], "annotations": []}
     for i in range(num_objects):
         ann = anns[i]
-        bbox = coco_box_to_bbox(ann['bbox'])
+        bbox = coco_box_to_bbox(ann["bbox"])
         bbox[:2] = affine_transform(bbox[:2], trans_output)
         bbox[2:] = affine_transform(bbox[2:], trans_output)
         bbox[0::2] = np.clip(bbox[0::2], 0, width - 1)

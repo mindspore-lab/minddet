@@ -1,6 +1,7 @@
-from typing import Optional, List, Tuple
-from mindspore import Tensor, ops, nn
+from typing import List, Optional, Tuple
+
 import mindspore as ms
+from mindspore import Tensor, nn, ops
 
 
 def get_local_maximum(heat, kernel=3):
@@ -130,34 +131,39 @@ class DecodeFeatures(nn.Cell):
         super(DecodeFeatures, self).__init__()
         self.trans_and_gather = TransposeGatherFeature()
 
-    def predict_by_feat(self,
-                        center_hm_preds,
-                        wh_preds,
-                        offset_preds,
-                        batch_img_metas: Optional[List[dict]] = None,
-                        rescale: bool = True,
-                        with_nms: bool = False):
-        assert len(center_hm_preds) == len(wh_preds) == len(
-            offset_preds) == 1
+    def predict_by_feat(
+        self,
+        center_hm_preds,
+        wh_preds,
+        offset_preds,
+        batch_img_metas: Optional[List[dict]] = None,
+        rescale: bool = True,
+        with_nms: bool = False,
+    ):
+        assert len(center_hm_preds) == len(wh_preds) == len(offset_preds) == 1
         result_list = []
         for img_id in range(len(batch_img_metas)):
             result_list.append(
                 self._predict_by_feat_single(
-                    center_hm_preds[0][img_id:img_id + 1, ...],  # (1, 80, 112, 168)
-                    wh_preds[0][img_id:img_id + 1, ...],  # (1, 2, 112, 168)
-                    offset_preds[0][img_id:img_id + 1, ...],
+                    center_hm_preds[0][img_id : img_id + 1, ...],  # (1, 80, 112, 168)
+                    wh_preds[0][img_id : img_id + 1, ...],  # (1, 2, 112, 168)
+                    offset_preds[0][img_id : img_id + 1, ...],
                     batch_img_metas[img_id],
                     rescale=rescale,  # True
-                    with_nms=with_nms))  # False
+                    with_nms=with_nms,
+                )
+            )  # False
         return result_list
 
-    def _predict_by_feat_single(self,
-                                center_heatmap_pred: Tensor,
-                                wh_pred: Tensor,
-                                offset_pred: Tensor,
-                                img_meta: dict,
-                                rescale: bool = True,
-                                with_nms: bool = False):
+    def _predict_by_feat_single(
+        self,
+        center_heatmap_pred: Tensor,
+        wh_pred: Tensor,
+        offset_pred: Tensor,
+        img_meta: dict,
+        rescale: bool = True,
+        with_nms: bool = False,
+    ):
         """Transform outputs of a single image into bbox results.
 
         Args:
@@ -190,31 +196,38 @@ class DecodeFeatures(nn.Cell):
             center_heatmap_pred,
             wh_pred,
             offset_pred,
-            img_meta['batch_input_shape'],  # (448, 672)
+            img_meta["batch_input_shape"],  # (448, 672)
             k=100,  # {'topk': 100, 'local_maximum_kernel': 3, 'max_per_img': 100}
-            kernel=3)
+            kernel=3,
+        )
 
         det_bboxes = batch_det_bboxes.view([-1, 5])
         det_labels = batch_labels.view(-1)
 
-        batch_border = det_bboxes.new_tensor(img_meta['border'])[...,
-                                                                 [2, 0, 2, 0]]
+        batch_border = det_bboxes.new_tensor(img_meta["border"])[..., [2, 0, 2, 0]]
         det_bboxes[..., :4] -= batch_border
 
-        if rescale and 'scale_factor' in img_meta:
+        if rescale and "scale_factor" in img_meta:
             det_bboxes[..., :4] /= det_bboxes.new_tensor(
-                img_meta['scale_factor']).repeat((1, 2))
+                img_meta["scale_factor"]
+            ).repeat((1, 2))
 
-        results = {'bboxes': det_bboxes[..., :4], 'scores': det_bboxes[..., 4], 'labels': det_labels}
+        results = {
+            "bboxes": det_bboxes[..., :4],
+            "scores": det_bboxes[..., 4],
+            "labels": det_labels,
+        }
         return results
 
-    def _decode_heatmap(self,
-                        center_heatmap_pred: Tensor,
-                        wh_pred: Tensor,
-                        offset_pred: Tensor,
-                        img_shape: tuple,
-                        k: int = 100,
-                        kernel: int = 3) -> Tuple[Tensor, Tensor]:
+    def _decode_heatmap(
+        self,
+        center_heatmap_pred: Tensor,
+        wh_pred: Tensor,
+        offset_pred: Tensor,
+        img_shape: tuple,
+        k: int = 100,
+        kernel: int = 3,
+    ) -> Tuple[Tensor, Tensor]:
         """Transform outputs into detections raw bbox prediction.
 
         Args:
@@ -238,11 +251,9 @@ class DecodeFeatures(nn.Cell):
         height, width = center_heatmap_pred.shape[2:]
         inp_h, inp_w = img_shape
 
-        center_heatmap_pred = get_local_maximum(
-            center_heatmap_pred, kernel=kernel)
+        center_heatmap_pred = get_local_maximum(center_heatmap_pred, kernel=kernel)
 
-        *batch_dets, topk_ys, topk_xs = get_topk_from_heatmap(
-            center_heatmap_pred, k=k)
+        *batch_dets, topk_ys, topk_xs = get_topk_from_heatmap(center_heatmap_pred, k=k)
         batch_scores, batch_index, batch_topk_labels = batch_dets
 
         wh = self.trans_and_gather(wh_pred, batch_index)
@@ -255,6 +266,5 @@ class DecodeFeatures(nn.Cell):
         br_y = (topk_ys + wh[..., 1] / 2) * (inp_h / height)
 
         batch_bboxes = ops.stack([tl_x, tl_y, br_x, br_y], axis=2)
-        batch_bboxes = ops.cat((batch_bboxes, batch_scores[..., None]),
-                               axis=-1)
+        batch_bboxes = ops.cat((batch_bboxes, batch_scores[..., None]), axis=-1)
         return batch_bboxes, batch_topk_labels
