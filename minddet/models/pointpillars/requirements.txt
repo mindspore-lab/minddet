@@ -1,0 +1,5 @@
+fire
+numba
+scikit-image
+tqdm
+numpy
