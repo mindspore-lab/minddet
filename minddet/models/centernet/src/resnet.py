@@ -3,15 +3,22 @@
 import math
 
 import mindspore
-from mindspore import ops, nn
-from mindspore.common.initializer import Normal, HeNormal
+from mindspore import nn, ops
+from mindspore.common.initializer import HeNormal, Normal
 
 
 # set initializer to constant for debugging.
 def conv3x3(inplanes, outplanes, stride=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(inplanes, outplanes, kernel_size=3, stride=stride, pad_mode="pad",
-                     padding=1, weight_init=HeNormal())
+    return nn.Conv2d(
+        inplanes,
+        outplanes,
+        kernel_size=3,
+        stride=stride,
+        pad_mode="pad",
+        padding=1,
+        weight_init=HeNormal(),
+    )
 
 
 class ModulatedDeformConv2d(nn.Conv2d):
@@ -26,14 +33,25 @@ class ModulatedDeformConv2d(nn.Conv2d):
         has_bias (bool: Same as nn.Conv2d. False.
 
     """
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=1, has_bias=False):
-        super(ModulatedDeformConv2d, self).__init__(in_channels,
-                                                    out_channels,
-                                                    kernel_size=kernel_size,
-                                                    stride=stride,
-                                                    pad_mode="pad",
-                                                    padding=padding,
-                                                    has_bias=has_bias)
+
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=1,
+        has_bias=False,
+    ):
+        super(ModulatedDeformConv2d, self).__init__(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            pad_mode="pad",
+            padding=padding,
+            has_bias=has_bias,
+        )
         self.deform_groups = 1
         self.de_stride = (1, 1, stride, stride)
         self.de_padding = (padding, padding, padding, padding)
@@ -74,8 +92,17 @@ class ModulatedDeformConv2d(nn.Conv2d):
         ms_offset = ops.concat((offsets_x1, offsets_y1, ms_mask), axis=1)
         ms_offset = self.reshape(ms_offset, (batch, 3 * 1 * 3 * 3, out_h, out_w))
 
-        out = ops.deformable_conv2d(x, self.weight, ms_offset, self.kernel_size, self.de_stride, self.de_padding,
-                                    bias=self.bias, deformable_groups=self.deform_groups, modulated=True)
+        out = ops.deformable_conv2d(
+            x,
+            self.weight,
+            ms_offset,
+            self.kernel_size,
+            self.de_stride,
+            self.de_padding,
+            bias=self.bias,
+            deformable_groups=self.deform_groups,
+            modulated=True,
+        )
         return out
 
 
@@ -117,7 +144,9 @@ class Bottleneck(nn.Cell):
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, has_bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         if dcn:
-            self.conv2 = ModulatedDeformConv2d(planes, planes, kernel_size=3, padding=1, stride=stride)
+            self.conv2 = ModulatedDeformConv2d(
+                planes, planes, kernel_size=3, padding=1, stride=stride
+            )
         else:
             self.conv2 = conv3x3(planes, planes, stride=stride)
 
@@ -150,49 +179,61 @@ class Bottleneck(nn.Cell):
 
 
 class ResNet(nn.Cell):
-
     def __init__(self, block, layers, dcn=False):
         super(ResNet, self).__init__()
         self.inplanes = 64
         self.print = ops.Print()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, pad_mode="pad",
-                               has_bias=False, weight_init=HeNormal())
+        self.conv1 = nn.Conv2d(
+            3,
+            64,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            pad_mode="pad",
+            has_bias=False,
+            weight_init=HeNormal(),
+        )
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
 
-        self.maxpool = nn.SequentialCell([
-            nn.Pad(paddings=((0, 0), (0, 0), (1, 1), (1, 1)), mode="CONSTANT"),
-            nn.MaxPool2d(kernel_size=3, stride=2)])
+        self.maxpool = nn.SequentialCell(
+            [
+                nn.Pad(paddings=((0, 0), (0, 0), (1, 1), (1, 1)), mode="CONSTANT"),
+                nn.MaxPool2d(kernel_size=3, stride=2),
+            ]
+        )
 
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(
-            block, 128, layers[1], stride=2, dcn=dcn)
-        self.layer3 = self._make_layer(
-            block, 256, layers[2], stride=2, dcn=dcn)
-        self.layer4 = self._make_layer(
-            block, 512, layers[3], stride=2, dcn=dcn)
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dcn=dcn)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dcn=dcn)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dcn=dcn)
         for m in self.cells():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight_init = Normal(0, math.sqrt(2. / n))
+                m.weight_init = Normal(0, math.sqrt(2.0 / n))
 
     def _make_layer(self, block, planes, blocks, stride=1, dcn=None):
-
         downsample = None
 
         if stride != 1 or self.inplanes != planes * block.expansion:
             # downsample的功能是调整residual使其和out保持相同尺寸，out的变化由plane和stride控制
             downsample = nn.SequentialCell(
                 # set initializer to constant for debugging.
-                nn.Conv2d(self.inplanes, planes * block.expansion, pad_mode="pad",
-                          kernel_size=1, stride=stride, has_bias=False, weight_init=HeNormal()),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    pad_mode="pad",
+                    kernel_size=1,
+                    stride=stride,
+                    has_bias=False,
+                    weight_init=HeNormal(),
+                ),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
         layers = []
 
-        layers.append(block(self.inplanes, planes,
-                            stride, downsample, dcn=dcn))
+        layers.append(block(self.inplanes, planes, stride, downsample, dcn=dcn))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(block(self.inplanes, planes, dcn=dcn))

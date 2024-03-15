@@ -16,7 +16,11 @@
 
 # [CenterNet Description](#contents)
 
-CenterNet is a novel practical anchor-free method for object detection, 3D detection, and pose estimation, which detect identifies objects as axis-aligned boxes in an image. The detector uses keypoint estimation to find center points and regresses to all other object properties, such as size, 3D location, orientation, and even pose. In nature, it's a one-stage method to simultaneously predict center location and bboxes with real-time speed and higher accuracy than corresponding bounding box based detectors.
+CenterNet is a novel practical anchor-free method for object detection, 3D detection, and pose estimation, which detect
+identifies objects as axis-aligned boxes in an image. The detector uses keypoint estimation to find center points and
+regresses to all other object properties, such as size, 3D location, orientation, and even pose. In nature, it's a
+one-stage method to simultaneously predict center location and bboxes with real-time speed and higher accuracy than
+corresponding bounding box based detectors.
 We support training and evaluation on Ascend910.
 
 [Paper](https://arxiv.org/pdf/1904.07850.pdf): Objects as Points. 2019.
@@ -25,14 +29,17 @@ Xingyi Zhou(UT Austin) and Dequan Wang(UC Berkeley) and Philipp Krahenbuhl(UT Au
 # [Model Architecture](#contents)
 
 ResNet18 with DCN
+
 # [Dataset](#contents)
 
-Note that you can run the scripts based on the dataset mentioned in original paper or widely used in relevant domain/network architecture. In the following sections, we will introduce how to run the scripts using the related dataset below.
+Note that you can run the scripts based on the dataset mentioned in original paper or widely used in relevant
+domain/network architecture. In the following sections, we will introduce how to run the scripts using the related
+dataset below.
 
 Dataset used: [COCO2017](https://cocodataset.org/)
 
 - Dataset size：26G
-    - Train：19G，118000 images  
+    - Train：19G，118000 images
     - Val：0.8G，5000 images
     - Test: 6.3G, 40000 images
     - Annotations：808M，instances，captions etc
@@ -73,7 +80,7 @@ Dataset used: [COCO2017](https://cocodataset.org/)
 
     - Prepare hardware environment with Ascend 910 processor.
 - Framework
-    MindSpore 2.3.0
+  MindSpore 2.3.0
     - [MindSpore](https://www.mindspore.cn/install/en)
 - For more information, please check the resources below：
     - [MindSpore tutorials](https://www.mindspore.cn/tutorials/zh-CN/r2.2/index.html)
@@ -81,7 +88,7 @@ Dataset used: [COCO2017](https://cocodataset.org/)
 - We use COCO2017 as training dataset in this example by default, and you can also use your own datasets.
 
     1. If coco dataset is used. **Select dataset to coco when run script.**
-        Install Cython and pycocotool
+       Install Cython and pycocotool
 
         ```pip
         pip install Cython
@@ -89,10 +96,10 @@ Dataset used: [COCO2017](https://cocodataset.org/)
         pip install pycocotools
         ```
 
-        And change the COCO_ROOT and other settings you need in `config.py`. The directory structure is as follows:
+       And change the COCO_ROOT and other settings you need in `config.py`. The directory structure is as follows:
 
         ```path
-        ├── data    
+        ├── data
             └─coco
                 ├─annotations
                     ├─instance_train2017.json
@@ -103,20 +110,20 @@ Dataset used: [COCO2017](https://cocodataset.org/)
         ```
 
     2. If your own dataset is used. **Select dataset to other when run script.**
-        Organize the dataset information the same format as COCO.
+       Organize the dataset information the same format as COCO.
 
 # [Quick Start](#contents)
 
 - running on local
 
-    After installing MindSpore via the official website, you can start training and evaluation as follows:
+  After installing MindSpore via the official website, you can start training and evaluation as follows:
 
-    Note:
-    1.the first run of training will generate the mindrecord file, which will take a long time.
-    2.MINDRECORD_DATASET_PATH is the mindrecord dataset directory.
-    3.For `train.py`, LOAD_CHECKPOINT_PATH is the pretrained checkpoint file directory, if no just set "".
-    4.For `eval.py`, LOAD_CHECKPOINT_PATH is the checkpoint to be evaluated.
-    5.RUN_MODE support validation and testing, set to be "val"/"test"
+  Note:
+  1.the first run of training will generate the mindrecord file, which will take a long time.
+  2.MINDRECORD_DATASET_PATH is the mindrecord dataset directory.
+  3.For `train.py`, LOAD_CHECKPOINT_PATH is the pretrained checkpoint file directory, if no just set "".
+  4.For `eval.py`, LOAD_CHECKPOINT_PATH is the checkpoint to be evaluated.
+  5.RUN_MODE support validation and testing, set to be "val"/"test"
 
     ```shell
     cd minddet/models/centernet
@@ -335,7 +342,8 @@ Before your first training, convert coco type dataset to mindrecord files is nee
 bash scripts/convert_dataset_to_mindrecord.sh /path/coco_dataset_dir /path/mindrecord_dataset_dir
 ```
 
-The command above will run in the background, after converting mindrecord files will be located in path specified by yourself.
+The command above will run in the background, after converting mindrecord files will be located in path specified by
+yourself.
 
 ### Distributed Training
 
@@ -345,7 +353,9 @@ The command above will run in the background, after converting mindrecord files 
 bash scripts/run_distributed_train_ascend.sh /path/mindrecord_dataset /path/hccl.json /path/load_ckpt(optional)
 ```
 
-The command above will run in the background, you can view training logs in LOG*/training_log.txt and LOG*/ms_log/. After training finished, you will get some checkpoint files under the LOG*/ckpt_0 folder by default. The loss value will be displayed as follows:
+The command above will run in the background, you can view training logs in LOG*/training_log.txt and LOG*/ms_log/.
+After training finished, you will get some checkpoint files under the LOG*/ckpt_0 folder by default. The loss value will
+be displayed as follows:
 
 ```text
 # grep "epoch" LOG0/training_log.txt
@@ -362,16 +372,22 @@ epoch: 139 | current epoch percent: 0.998 | step: 128238 | loss 1.8683317 | over
 epoch: 139 | current epoch percent: 0.999 | step: 128239 | loss 1.4165485 | overflow False | scaling_sens 1024.0 | lr 5e-06
 ```
 
-If you want train with pretrained backbone(ResNet18), download the official checkpoint from [models](https://download.pytorch.org/models/resnet18-5c106cde.pth), and then convert it to mindspore version via the following command at first:
+If you want train with pretrained backbone(ResNet18), download the official checkpoint
+from [models](https://download.pytorch.org/models/resnet18-5c106cde.pth), and then convert it to mindspore version via
+the following command at first:
+
 ```python
 python tools/convert_resnet18.py -ckpt_file ckpt_file --torch_name_file torch_name --ms_name_file ms_name --output_file output_file
 ```
+
 set output_file to the 'load_backbone_path' section in default_config.yaml and rerun the script
 
 ## [Testing Process](#contents)
 
 ### Evaluation
+
 evaluation use NMS for post-processing, need to install nms.so at first
+
 ```shell
     git clone https://github.com/xingyizhou/CenterNet.git
     cd CenterNet/src/lib/external/
@@ -380,6 +396,7 @@ evaluation use NMS for post-processing, need to install nms.so at first
     cd - || exit
     rm -rf CenterNet
 ```
+
 ```shell
 # Evaluation base on validation dataset
 # On Ascend
@@ -412,34 +429,34 @@ overall performance on coco2017 validation dataset
 
 CenterNet on 11.8K images(The annotation and data format must be the same as coco)
 
-| Parameters             | CenterNet_ResNet18_DCN                                           |
-| ---------------------- | ------------------------------------------------------------ |
-| Resource               | Ascend 910; CPU 2.60GHz, 192cores; Memory, 1511G              |
-| uploaded Date          | 03/08/2024 (month/day/year)                                  |
-| MindSpore Version      | 2.3.0                                                        |
-| Dataset                | COCO2017/train2017                                                     |
-| Training Parameters    | 8p, epoch=140, steps=128240, batch_size = 16, lr=5e-4      |
-| Optimizer              | Adam                                                         |
-| Loss Function          | Focal Loss, L1 Loss, RegLoss                                 |
-| outputs                | detections                                                   |
-| Loss                   | 1.5-2.0                                                      |
-| Speed                  | 8p 590 img/s                                                  |
-| Total time: training   | 8p: 8 h                                                     |
-| Checkpoint             | 166MB (.ckpt file)                                           |
-| Scripts                | run_distributed_train_ascend.sh                                          |
+| Parameters           | CenterNet_ResNet18_DCN                                |
+|----------------------|-------------------------------------------------------|
+| Resource             | Ascend 910; CPU 2.60GHz, 192cores; Memory, 1511G      |
+| uploaded Date        | 03/08/2024 (month/day/year)                           |
+| MindSpore Version    | 2.3.0                                                 |
+| Dataset              | COCO2017/train2017                                    |
+| Training Parameters  | 8p, epoch=140, steps=128240, batch_size = 16, lr=5e-4 |
+| Optimizer            | Adam                                                  |
+| Loss Function        | Focal Loss, L1 Loss, RegLoss                          |
+| outputs              | detections                                            |
+| Loss                 | 1.5-2.0                                               |
+| Speed                | 8p 590 img/s                                          |
+| Total time: training | 8p: 8 h                                               |
+| Checkpoint           | 166MB (.ckpt file)                                    |
+| Scripts              | run_distributed_train_ascend.sh                       |
 
 ### Inference Performance On Ascend 910
 
 CenterNet on validation(5K images)
 
-| Parameters           | CenterNet_ResNet18_DCN                                           |
-| -------------------- | ------------------------------------------------------------ |
-| Resource             | Ascend 910; CPU 2.60GHz, 192cores; Memory, 1511G             |
-| uploaded Date        | 03/08/2024 (month/day/year)                                  |
-| MindSpore Version    | 2.3.0                                                        |
-| Dataset              | COCO2017/val2017                                                     |
-| batch_size           | 1                                                            |
-| outputs              | mAP                                                          |
+| Parameters           | CenterNet_ResNet18_DCN                                            |
+|----------------------|-------------------------------------------------------------------|
+| Resource             | Ascend 910; CPU 2.60GHz, 192cores; Memory, 1511G                  |
+| uploaded Date        | 03/08/2024 (month/day/year)                                       |
+| MindSpore Version    | 2.3.0                                                             |
+| Dataset              | COCO2017/val2017                                                  |
+| batch_size           | 1                                                                 |
+| outputs              | mAP                                                               |
 | Accuracy(validation) | MAP: 28.7%, AP50: 47.2%, AP75: 29.3%, Medium: 31.5%, Large: 42.6% |
 
 # [Description of Random Situation](#contents)
@@ -448,4 +465,3 @@ In run_distributed_train_ascend.sh, we set do_shuffle to True to shuffle the dat
 In train.py, we set a random seed to make sure that each node has the same initial weight in distribute training.
 
 # FAQ
-

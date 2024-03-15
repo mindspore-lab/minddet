@@ -2,13 +2,12 @@
 Decode from heads for evaluation
 """
 
-import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
-from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
+from mindspore.ops import operations as P
+
 from .utils import GatherFeature, TransposeGatherFeature
-import numpy as np
 
 
 class NMS(nn.Cell):
@@ -32,7 +31,7 @@ class NMS(nn.Cell):
 
         # self.pad = nn.Pad(paddings=((0, 0), (0, 0), (1, 1), (1, 1)), mode="CONSTANT")
         # self.max_pool_ = nn.MaxPool2d(kernel_size=3, stride=1)
-        self.max_pool = nn.MaxPool2d(kernel_size=kernel, stride=1, pad_mode='same')
+        self.max_pool = nn.MaxPool2d(kernel_size=kernel, stride=1, pad_mode="same")
 
         self.enable_fp16 = enable_nms_fp16
         self.print = ops.Print()
@@ -150,7 +149,7 @@ class DetectionDecode(nn.Cell):
 
     def construct(self, feature, K=100):
         """gather detections"""
-        heat = feature['hm']
+        heat = feature["hm"]
         b, _, _, _ = self.shape(heat)
         heat = self.nms(heat)
         # self.print(heat)
@@ -163,7 +162,7 @@ class DetectionDecode(nn.Cell):
         ys = self.reshape(ys, (b, K, 1))
         xs = self.reshape(xs, (b, K, 1))
 
-        wh = feature['wh']
+        wh = feature["wh"]
         wh = self.trans_gather_feature(wh, inds)
         # wh = self.reshape(wh, (b, K, 2))
 
@@ -171,7 +170,7 @@ class DetectionDecode(nn.Cell):
         # ws = wh[..., 0:1]
         # hs = wh[..., 1:2]
         if self.reg_offset:
-            reg = feature['reg']
+            reg = feature["reg"]
             reg = self.trans_gather_feature(reg, inds)
             reg = self.reshape(reg, (b, K, 2))
             reg_w, reg_h = self.half(reg)

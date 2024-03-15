@@ -1,11 +1,12 @@
 """post process for 310 inference"""
-import os
 import json
+import os
+
 import numpy as np
 import pycocotools.coco as coco
 from pycocotools.cocoeval import COCOeval
+from src import convert_eval_format, merge_outputs, post_process
 from src.model_utils.config import config, dataset_config, eval_config
-from src import convert_eval_format, post_process, merge_outputs
 
 
 def cal_acc(result_path, label_path, meta_path, save_path):
@@ -17,13 +18,17 @@ def cal_acc(result_path, label_path, meta_path, save_path):
     pred_annos = {"images": [], "annotations": []}
     for num, image_id in enumerate(name_list):
         meta = meta_list[num]
-        pre_image = np.fromfile(os.path.join(result_path) + "/eval2017_image_" + str(image_id) + "_0.bin",
-                                dtype=np.float32).reshape((1, 100, 6))
+        pre_image = np.fromfile(
+            os.path.join(result_path) + "/eval2017_image_" + str(image_id) + "_0.bin",
+            dtype=np.float32,
+        ).reshape((1, 100, 6))
         detections = []
         for scale in eval_config.multi_scales:
             dets = post_process(pre_image, meta, scale, dataset_config.num_classes)
             detections.append(dets)
-        detections = merge_outputs(detections, dataset_config.num_classes, eval_config.SOFT_NMS)
+        detections = merge_outputs(
+            detections, dataset_config.num_classes, eval_config.SOFT_NMS
+        )
         pred_json = convert_eval_format(detections, image_id, eval_config.valid_ids)
         label_infor.loadImgs([image_id])
         for image_info in pred_json["images"]:
@@ -33,10 +38,12 @@ def cal_acc(result_path, label_path, meta_path, save_path):
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-    pred_anno_file = os.path.join(save_path, '{}_pred_result.json').format(config.run_mode)
-    json.dump(pred_annos, open(pred_anno_file, 'w'))
-    pred_res_file = os.path.join(save_path, '{}_pred_eval.json').format(config.run_mode)
-    json.dump(pred_annos["annotations"], open(pred_res_file, 'w'))
+    pred_anno_file = os.path.join(save_path, "{}_pred_result.json").format(
+        config.run_mode
+    )
+    json.dump(pred_annos, open(pred_anno_file, "w"))
+    pred_res_file = os.path.join(save_path, "{}_pred_eval.json").format(config.run_mode)
+    json.dump(pred_annos["annotations"], open(pred_res_file, "w"))
 
     coco_anno = coco.COCO(label_path)
     coco_dets = coco_anno.loadRes(pred_res_file)
@@ -46,5 +53,5 @@ def cal_acc(result_path, label_path, meta_path, save_path):
     coco_eval.summarize()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cal_acc(config.result_path, config.label_path, config.meta_path, config.save_path)

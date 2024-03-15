@@ -1,20 +1,15 @@
-import mindspore
-import torch
-from src.centernet_det import CenterNetLossCell
-from src.model_utils.config import net_config
-import numpy as np
-"""
-convert centernet-r50 pretrain model from torch to mindspore
-"""
 import argparse
-from mindspore.train.serialization import save_checkpoint
+
+import mindspore
+import mindspore.common.dtype as mstype
+import torch
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
-import mindspore.common.dtype as mstype
+from mindspore.train.serialization import save_checkpoint
 
 
 def pytorch_params(pth_file):
-    par_dict = torch.load(pth_file, map_location='cpu')
+    par_dict = torch.load(pth_file, map_location="cpu")
     print(type(par_dict))
     pt_params = {}
     for name, v in par_dict.items():
@@ -27,7 +22,7 @@ torch2ms = {}
 torch_type2_ms_type = {
     "float32": mindspore.float32,
     "float16": mindspore.float16,
-    "bfloat16": mindspore.bfloat16
+    "bfloat16": mindspore.bfloat16,
 }
 
 
@@ -36,12 +31,12 @@ def load_model_params2_dict(torch_name_file, ms_name_file):
     ms_names = []
     with open(torch_name_file, "r") as f:
         for line in f.readlines():
-            line = line.strip('\n')
+            line = line.strip("\n")
             torch_names.append(line)
     with open(ms_name_file, "r") as f:
         for line in f.readlines():
-            line = line.strip('\n')
-            if 'backbone' in line:
+            line = line.strip("\n")
+            if "backbone" in line:
                 ms_names.append(line)
     if len(torch_names) != len(ms_names):
         raise ValueError("length of torch names and ms names should be equal")
@@ -62,7 +57,9 @@ def convert(pth_file):
 
     parameter_dict = {}
     for name in weights:
-        parameter_dict[name] = Parameter(Tensor(weights[name], mstype.float32), name=name)
+        parameter_dict[name] = Parameter(
+            Tensor(weights[name], mstype.float32), name=name
+        )
     param_list = []
     for key, value in parameter_dict.items():
         param_list.append({"name": key, "data": value})
@@ -74,7 +71,9 @@ def parse_args():
     parser.add_argument("--ckpt_file", required=True, help="ckpt file path")
     parser.add_argument("--torch_name_file", required=True, help="torch name file")
     parser.add_argument("--ms_name_file", required=True, help="mindspore name file")
-    parser.add_argument("--output_file", required=True, help="output checkpoint file after convert")
+    parser.add_argument(
+        "--output_file", required=True, help="output checkpoint file after convert"
+    )
 
     args = parser.parse_args()
     return args
@@ -85,6 +84,3 @@ if __name__ == "__main__":
     load_model_params2_dict(args.torch_name_file, args.ms_name_file)
     parameter_list = convert(args.ckpt_file)
     save_checkpoint(parameter_list, args.output_file)
-
-
-

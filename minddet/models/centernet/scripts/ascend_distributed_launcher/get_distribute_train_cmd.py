@@ -1,8 +1,8 @@
 """distribute pretrain script"""
-import os
-import json
 import configparser
+import json
 import multiprocessing
+import os
 from argparse import ArgumentParser
 
 
@@ -20,19 +20,43 @@ def parse_args():
     """
     parser = ArgumentParser(description="mindspore distributed training")
 
-    parser.add_argument("--run_script_dir", type=str, default="",
-                        help="Run script path, it is better to use absolute path")
-    parser.add_argument("--hyper_parameter_config_dir", type=str, default="",
-                        help="Hyper Parameter config path, it is better to use absolute path")
-    parser.add_argument("--mindrecord_dir", type=str, default="", help="Mindrecord dataset directory")
-    parser.add_argument("--load_checkpoint_path", type=str, default="", help="Load checkpoint file path")
-    parser.add_argument("--hccl_config_dir", type=str, default="",
-                        help="Hccl config path, it is better to use absolute path")
-    parser.add_argument("--cmd_file", type=str, default="distributed_cmd.sh",
-                        help="Path of the generated cmd file.")
-    parser.add_argument("--hccl_time_out", type=int, default=120,
-                        help="Seconds to determine the hccl time out,"
-                             "default: 120, which is the same as hccl default config")
+    parser.add_argument(
+        "--run_script_dir",
+        type=str,
+        default="",
+        help="Run script path, it is better to use absolute path",
+    )
+    parser.add_argument(
+        "--hyper_parameter_config_dir",
+        type=str,
+        default="",
+        help="Hyper Parameter config path, it is better to use absolute path",
+    )
+    parser.add_argument(
+        "--mindrecord_dir", type=str, default="", help="Mindrecord dataset directory"
+    )
+    parser.add_argument(
+        "--load_checkpoint_path", type=str, default="", help="Load checkpoint file path"
+    )
+    parser.add_argument(
+        "--hccl_config_dir",
+        type=str,
+        default="",
+        help="Hccl config path, it is better to use absolute path",
+    )
+    parser.add_argument(
+        "--cmd_file",
+        type=str,
+        default="distributed_cmd.sh",
+        help="Path of the generated cmd file.",
+    )
+    parser.add_argument(
+        "--hccl_time_out",
+        type=int,
+        default=120,
+        help="Seconds to determine the hccl time out,"
+        "default: 120, which is the same as hccl default config",
+    )
 
     args = parser.parse_args()
     return args
@@ -43,8 +67,10 @@ def append_cmd(cmd, s):
     cmd += "\n"
     return cmd
 
+
 def append_cmd_env(cmd, key, value):
     return append_cmd(cmd, "export " + str(key) + "=" + str(value))
+
 
 def distribute_train():
     """
@@ -64,19 +90,19 @@ def distribute_train():
 
     print("hccl_config_dir:", args.hccl_config_dir)
     print("hccl_time_out:", args.hccl_time_out)
-    cmd = append_cmd_env(cmd, 'HCCL_CONNECT_TIMEOUT', args.hccl_time_out)
-    cmd = append_cmd_env(cmd, 'RANK_TABLE_FILE', args.hccl_config_dir)
+    cmd = append_cmd_env(cmd, "HCCL_CONNECT_TIMEOUT", args.hccl_time_out)
+    cmd = append_cmd_env(cmd, "RANK_TABLE_FILE", args.hccl_config_dir)
 
     cores = multiprocessing.cpu_count()
     print("the number of logical core:", cores)
 
     # get device_ips
     device_ips = {}
-    with open('/etc/hccn.conf', 'r') as fin:
+    with open("/etc/hccn.conf", "r") as fin:
         for hccn_item in fin.readlines():
-            if hccn_item.strip().startswith('address_'):
-                device_id, device_ip = hccn_item.split('=')
-                device_id = device_id.split('_')[1]
+            if hccn_item.strip().startswith("address_"):
+                device_id, device_ip = hccn_item.split("=")
+                device_id = device_id.split("_")[1]
                 device_ips[device_id] = device_ip.strip()
 
     with open(args.hccl_config_dir, "r", encoding="utf-8") as fin:
@@ -98,7 +124,13 @@ def distribute_train():
     for instance in this_server["device"]:
         device_id = instance["device_id"]
         rank_id = instance["rank_id"]
-        print("\nstart training for rank " + str(rank_id) + ", device " + str(device_id) + ":")
+        print(
+            "\nstart training for rank "
+            + str(rank_id)
+            + ", device "
+            + str(device_id)
+            + ":"
+        )
         print("rank_id:", rank_id)
         print("device_id:", device_id)
 
@@ -109,8 +141,8 @@ def distribute_train():
 
         cmd = append_cmd_env(cmd, "DEVICE_ID", str(device_id))
         cmd = append_cmd_env(cmd, "RANK_ID", str(rank_id))
-        cmd = append_cmd_env(cmd, "DEPLOY_MODE", '0')
-        cmd = append_cmd_env(cmd, "GE_USE_STATIC_MEMORY", '1')
+        cmd = append_cmd_env(cmd, "DEPLOY_MODE", "0")
+        cmd = append_cmd_env(cmd, "GE_USE_STATIC_MEMORY", "1")
 
         cmd = append_cmd(cmd, "rm -rf LOG" + str(device_id))
         cmd = append_cmd(cmd, "mkdir ./LOG" + str(device_id))
@@ -119,26 +151,37 @@ def distribute_train():
         cmd = append_cmd(cmd, "env > ./LOG" + str(device_id) + "/env.log")
 
         cur_dir = os.getcwd()
-        cmd = append_cmd_env(cmd, "GLOG_log_dir", cur_dir + "/LOG" + str(device_id) + "/ms_log")
+        cmd = append_cmd_env(
+            cmd, "GLOG_log_dir", cur_dir + "/LOG" + str(device_id) + "/ms_log"
+        )
         cmd = append_cmd_env(cmd, "GLOG_logtostderr", "0")
 
         print("core_nums:", cmdopt)
-        print("epoch_size:", str(cfg['epoch_size']))
+        print("epoch_size:", str(cfg["epoch_size"]))
         print("mindrecord_dir:", mindrecord_dir)
-        print("log_file_dir: " + cur_dir + "/LOG" + str(device_id) + "/training_log.txt")
+        print(
+            "log_file_dir: " + cur_dir + "/LOG" + str(device_id) + "/training_log.txt"
+        )
 
         cmd = append_cmd(cmd, "cd " + cur_dir + "/LOG" + str(device_id))
 
-        run_cmd = 'taskset -c ' + cmdopt + ' nohup python ' + run_script + " "
+        run_cmd = "taskset -c " + cmdopt + " nohup python " + run_script + " "
         opt = " ".join(["--" + key + "=" + str(cfg[key]) for key in cfg.keys()])
-        if ('device_id' in opt) or ('device_num' in opt) or ('mindrecord_dir' in opt):
-            raise ValueError("hyper_parameter_config.ini can not setting 'device_id',"
-                             " 'device_num' or 'mindrecord_dir'! ")
+        if ("device_id" in opt) or ("device_num" in opt) or ("mindrecord_dir" in opt):
+            raise ValueError(
+                "hyper_parameter_config.ini can not setting 'device_id',"
+                " 'device_num' or 'mindrecord_dir'! "
+            )
         run_cmd += opt
         run_cmd += " --mindrecord_dir=" + mindrecord_dir
         run_cmd += " --load_checkpoint_path=" + load_checkpoint_path
-        run_cmd += ' --device_id=' + str(device_id) + ' --device_num=' \
-               + str(rank_size) + ' >./training_log.txt 2>&1 &'
+        run_cmd += (
+            " --device_id="
+            + str(device_id)
+            + " --device_num="
+            + str(rank_size)
+            + " >./training_log.txt 2>&1 &"
+        )
 
         cmd = append_cmd(cmd, run_cmd)
         cmd = append_cmd(cmd, "cd -")
@@ -146,6 +189,7 @@ def distribute_train():
 
     with open(args.cmd_file, "w") as f:
         f.write(cmd)
+
 
 if __name__ == "__main__":
     distribute_train()
