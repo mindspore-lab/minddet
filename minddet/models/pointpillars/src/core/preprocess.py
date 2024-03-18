@@ -750,11 +750,11 @@ def box_collision_test(boxes, qboxes, clockwise=True):
 def _get_ret(lines_boxes, lines_qboxes, i, j):
     """get ret"""
     for k in range(4):
-        for l in range(4):
+        for m in range(4):
             a = lines_boxes[i, k, 0]
             b = lines_boxes[i, k, 1]
-            c = lines_qboxes[j, l, 0]
-            d = lines_qboxes[j, l, 1]
+            c = lines_qboxes[j, m, 0]
+            d = lines_qboxes[j, m, 1]
             a_c_d = (d[1] - a[1]) * (c[0] - a[0]) > (c[1] - a[1]) * (d[0] - a[0])
             b_c_d = (d[1] - b[1]) * (c[0] - b[0]) > (c[1] - b[1]) * (d[0] - b[0])
             if a_c_d != b_c_d:
@@ -770,13 +770,13 @@ def _get_ret(lines_boxes, lines_qboxes, i, j):
 def _get_box_overlap_another(boxes, qboxes, clockwise, i, j):
     """get box overlap another box"""
     box_overlap_another = True
-    for l in range(4):
+    for m in range(4):
         for k in range(4):
             vec = boxes[i, k] - boxes[i, (k + 1) % 4]
             if clockwise:
                 vec = -vec
-            cross = vec[1] * (boxes[i, k, 0] - qboxes[j, l, 0])
-            cross -= vec[0] * (boxes[i, k, 1] - qboxes[j, l, 1])
+            cross = vec[1] * (boxes[i, k, 0] - qboxes[j, m, 0])
+            cross -= vec[0] * (boxes[i, k, 1] - qboxes[j, m, 1])
             if cross >= 0:
                 box_overlap_another = False
                 break

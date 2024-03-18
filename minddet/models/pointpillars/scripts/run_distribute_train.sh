@@ -57,4 +57,3 @@ do
       --cfg_path=$CFG_PATH \
       --save_path=$SAVE_PATH > train_log$i.txt 2>&1 &
 done
-

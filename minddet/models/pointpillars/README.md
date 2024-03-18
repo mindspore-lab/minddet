@@ -285,7 +285,7 @@ Result:
 bash ./scripts/run_distribute_train.sh /home/group1/pointpillars/
 configs/car_xyres16.yaml ./output/dist/ 8 /home/hccl_8p_01234567_192.168.88.13.json
 ```
-上述配置文件和分布式hccl文件需要使用绝对路径 
+the config path and the hccl file path need to use absolute path.
 Logs will be saved to `./device0/train_log0.txt`
 
 

@@ -183,7 +183,6 @@ def compute_statistics_jit(
     gt_alphas = gt_datas[:, 4]
     dt_bboxes = dt_datas[:, :4]
 
-
     assigned_detection = [False] * det_size
     ignored_threshold = [False] * det_size
     if compute_fp:
@@ -518,7 +517,7 @@ def eval_class(
     recall = np.zeros([num_class, num_difficulty, num_minoverlap, N_SAMPLE_PTS])
     aos = np.zeros([num_class, num_difficulty, num_minoverlap, N_SAMPLE_PTS])
     for m, current_class in enumerate(current_classes):
-        for l, difficulty in enumerate(difficultys):
+        for n, difficulty in enumerate(difficultys):
             rets = _prepare_data(gt_annos, dt_annos, current_class, difficulty)
             (
                 gt_datas_list,
@@ -583,15 +582,15 @@ def eval_class(
                     )
                     idx += num_part
                 for i in range(len(thresholds)):
-                    recall[m, l, k, i] = pr[i, 0] / (pr[i, 0] + pr[i, 2])
-                    precision[m, l, k, i] = pr[i, 0] / (pr[i, 0] + pr[i, 1])
+                    recall[m, n, k, i] = pr[i, 0] / (pr[i, 0] + pr[i, 2])
+                    precision[m, n, k, i] = pr[i, 0] / (pr[i, 0] + pr[i, 1])
                     if compute_aos:
-                        aos[m, l, k, i] = pr[i, 3] / (pr[i, 0] + pr[i, 1])
+                        aos[m, n, k, i] = pr[i, 3] / (pr[i, 0] + pr[i, 1])
                 for i in range(len(thresholds)):
-                    precision[m, l, k, i] = np.max(precision[m, l, k, i:], axis=-1)
-                    recall[m, l, k, i] = np.max(recall[m, l, k, i:], axis=-1)
+                    precision[m, n, k, i] = np.max(precision[m, n, k, i:], axis=-1)
+                    recall[m, n, k, i] = np.max(recall[m, n, k, i:], axis=-1)
                     if compute_aos:
-                        aos[m, l, k, i] = np.max(aos[m, l, k, i:], axis=-1)
+                        aos[m, n, k, i] = np.max(aos[m, n, k, i:], axis=-1)
     ret_dict = {
         "recall": recall,
         "precision": precision,

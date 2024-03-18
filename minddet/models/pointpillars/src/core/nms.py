@@ -1,7 +1,7 @@
 """NMS"""
 import mindspore as ms
 import numpy as np
-from mindspore import Tensor, ops
+from mindspore import ops
 
 
 def apply_nms(all_boxes, all_scores, thres, max_boxes):

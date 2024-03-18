@@ -209,8 +209,11 @@ class TargetAssigner:
             """box encoding fn"""
             return self._box_coder.encode(boxes, anchors)
 
+        def prune_anchor(anchors_mask):
+            return np.where(anchors_mask)[0]
+
         if anchors_mask is not None:
-            prune_anchor_fn = lambda _: np.where(anchors_mask)[0]
+            prune_anchor_fn = prune_anchor
         else:
             prune_anchor_fn = None
         return create_target_np(
