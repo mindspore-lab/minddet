@@ -127,8 +127,7 @@ class DataBaseSampler:
         if self._use_group_sampling:
             if not gt_group_ids:
                 raise ValueError(
-                    f"Ground truth group indices must be provided, "
-                    f"when the group sampling is enabled"
+                    "Ground truth group indices must be provided, when the group sampling is enabled"
                 )
             sampled_groups = []
             sample_num_per_class = []
@@ -231,7 +230,7 @@ class DataBaseSampler:
         if self._use_group_sampling:
             group_name = name
             ret = self._sampler_dict[group_name].sample(num)
-            groups_num = [len(l) for l in ret]
+            groups_num = [len(r) for r in ret]
             return reduce(lambda x, y: x + y, ret), groups_num
         ret = self._sampler_dict[name].sample(num)
         return ret, np.ones((len(ret),), dtype=np.int64)

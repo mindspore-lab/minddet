@@ -31,7 +31,6 @@ def create_target_np(
     gt_boxes,
     similarity_fn,
     box_encoding_fn,
-    prune_anchor_fn=None,
     gt_classes=None,
     matched_threshold=0.6,
     unmatched_threshold=0.45,
@@ -39,6 +38,7 @@ def create_target_np(
     rpn_batch_size=300,
     norm_by_num_examples=False,
     box_code_size=7,
+    anchors_mask=None,
 ):
     """Modified from FAIR detectron.
     Args:
@@ -67,8 +67,8 @@ def create_target_np(
         labels, bbox_targets, bbox_outside_weights
     """
     total_anchors = all_anchors.shape[0]
-    if prune_anchor_fn is not None:
-        inds_inside = prune_anchor_fn(all_anchors)
+    if anchors_mask is not None:
+        inds_inside = (lambda _: np.where(anchors_mask)[0])(all_anchors)
         anchors = all_anchors[inds_inside, :]
         if not isinstance(matched_threshold, float):
             matched_threshold = matched_threshold[inds_inside]
@@ -209,16 +209,11 @@ class TargetAssigner:
             """box encoding fn"""
             return self._box_coder.encode(boxes, anchors)
 
-        if anchors_mask is not None:
-            prune_anchor_fn = lambda _: np.where(anchors_mask)[0]
-        else:
-            prune_anchor_fn = None
         return create_target_np(
             anchors,
             gt_boxes,
             similarity_fn,
             box_encoding_fn,
-            prune_anchor_fn=prune_anchor_fn,
             gt_classes=gt_classes,
             matched_threshold=matched_thresholds,
             unmatched_threshold=unmatched_thresholds,
@@ -226,6 +221,7 @@ class TargetAssigner:
             rpn_batch_size=self._sample_size,
             norm_by_num_examples=False,
             box_code_size=self.box_coder.code_size,
+            anchors_mask=anchors_mask,
         )
 
     def generate_anchors(self, feature_map_size):

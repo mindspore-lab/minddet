@@ -475,7 +475,7 @@ def create_anchors_3d_stride(
     grid_size = [feature_size[2], feature_size[1]]
     x_stride = (anchor_range[3] - anchor_range[0]) / (grid_size[0] - 1)
     y_stride = (anchor_range[4] - anchor_range[1]) / (grid_size[1] - 1)
-    x_offset, y_offset, z_offset = [0, 0, 0]  # 0.16 -39.52 -1.78
+    x_offset, y_offset = [0, 0]  # 0.16 -39.52 -1.78
     x_shifts = np.arange(
         anchor_range[0] + x_offset,
         anchor_range[3] + 1e-5,
