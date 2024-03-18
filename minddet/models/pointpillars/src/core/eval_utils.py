@@ -121,12 +121,16 @@ def image_box_overlap(boxes, query_boxes, criterion=-1):
         Calculates the overlap of multiple boxes on the image with multiple query boxes
 
         Args:
-            boxes (numpy.ndarray): An array of shape (n, 4), where n is the number of boxes and the 4th element is the width and height.
-            query_boxes (numpy.ndarray): An array of shape (k, 4), where k is the number of query boxes and the 4th element is the width and height.
-            criterion (int, optional): Overlap degree calculation method. - 1 for IoU, 0 for area, 1 for minimum bounding rectangle. The default value is -1.
+            boxes (numpy.ndarray): An array of shape (n, 4), where n is the number of boxes and the 4th 
+            element is the width and height.
+            query_boxes (numpy.ndarray): An array of shape (k, 4), where k is the number of query boxes and 
+            the 4th element is the width and height.
+            criterion (int, optional): Overlap degree calculation method. - 1 for IoU, 0 for area, 
+            1 for minimum bounding rectangle. The default value is -1.
 
         Returns:
-            numpy.ndarray: An array of shape (n, k), where n is the number of boxes and k is the number of query boxes. Each element represents the degree of overlap of boxes[n] with query_boxes[k].
+            numpy.ndarray: An array of shape (n, k), where n is the number of boxes and k is the number of query boxes. 
+            Each element represents the degree of overlap of boxes[n] with query_boxes[k].
     """
     n_boxes = boxes.shape[0]
     k_qboxes = query_boxes.shape[0]
@@ -530,7 +534,7 @@ def eval_class(
     num_difficulty = len(difficultys)
     precision = np.zeros([num_class, num_difficulty, num_minoverlap, n_sample_pts])
     for m, current_class in enumerate(current_classes):
-        for l, difficulty in enumerate(difficultys):
+        for n, difficulty in enumerate(difficultys):
             rets = _prepare_data(gt_annos, dt_annos, current_class, difficulty)
             (
                 gt_datas_list,
@@ -595,9 +599,9 @@ def eval_class(
                     )
                     idx += num_part
                 for i in range(len(thresholds)):
-                    precision[m, l, k, i] = pr[i, 0] / (pr[i, 0] + pr[i, 1])
+                    precision[m, n, k, i] = pr[i, 0] / (pr[i, 0] + pr[i, 1])
                 for i in range(len(thresholds)):
-                    precision[m, l, k, i] = np.max(precision[m, l, k, i:], axis=-1)
+                    precision[m, n, k, i] = np.max(precision[m, n, k, i:], axis=-1)
     ret_dict = {"precision": precision}
     return ret_dict
 

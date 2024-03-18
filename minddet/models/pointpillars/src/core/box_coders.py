@@ -1,10 +1,6 @@
 """box coders"""
-import time as time
-
-import numpy as np
 from mindspore import numpy as mnp
 from mindspore import ops
-from mindspore.profiler import Profiler
 from src.core import box_np_ops, box_ops
 
 

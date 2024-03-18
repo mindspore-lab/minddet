@@ -74,7 +74,7 @@ def outer_product(f_inputs, dimensions, tensors):
             continue
 
         source = dict(zip(labels, range(len(labels))))
-        permutation = [source[l] for l in f_output if l in labels]
+        permutation = [source[line] for line in f_output if line in labels]
         labels = [labels[axis] for axis in permutation]
         tensor = ops.Transpose()(tensor, tuple(permutation))
 
@@ -114,7 +114,7 @@ def contract(op, dimensions, f_output):
     if f_input == f_output:
         return op
     source = dict(zip(f_input, range(len(f_input))))
-    permutation = [source[l] for l in f_output]
+    permutation = [source[line] for line in f_output]
     return ops.Transpose()(op, tuple(permutation))
 
 

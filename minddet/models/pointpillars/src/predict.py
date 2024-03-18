@@ -69,7 +69,6 @@ def _get_selected_data(total_scores, box_preds, top_labels, dir_labels, cfg):
         box_preds_corners = box_ops.center_to_corner_box2d(
             boxes_for_nms[:, :2], boxes_for_nms[:, 2:4], boxes_for_nms[:, 4]
         )
-        start_corner_to_standup = time()
         if isinstance(box_preds_corners, np.ndarray):
             boxes_for_nms = box_ops.corner_to_standup_nd_np_new(box_preds_corners)
             selected = nms.nms_np(

@@ -1,16 +1,12 @@
 import os
 import pickle
 import sys
-import time
-
 import fire
+from eval import get_official_eval_result
 
 # print(sys.path)
 sys.path.append(os.path.split(os.path.abspath(os.path.dirname(__file__)))[0])
 print(sys.path)
-
-import kitti_common as kitti
-from eval import get_coco_eval_result, get_official_eval_result
 
 
 def _read_imageset_file(path):
