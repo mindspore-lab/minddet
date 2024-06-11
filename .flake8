@@ -1,0 +1,9 @@
+[flake8]
+max-line-length = 120
+extend-exclude =
+    docs/*,
+    examples/*,
+    setup.py
+    minddet/models/centernet/README*
+    minddet/models/centernet/scripts
+extend-ignore = E203

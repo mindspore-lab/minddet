@@ -12,7 +12,7 @@ A toolbox of object detection models and algorithms based on MindSpore
 * yolo v7
 * yolo v8
 * yolo x
-  
+
 ## segmentation
 * deeplab v3
 * deeplab v3 plus
