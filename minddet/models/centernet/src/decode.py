@@ -4,6 +4,7 @@ Decode from heads for evaluation
 
 import mindspore.nn as nn
 import mindspore.ops as ops
+
 from mindspore import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
@@ -188,6 +189,7 @@ class DetectionDecode(nn.Cell):
         c3 = Tensor(xs + ws / 2, mstype.float32)
         c4 = Tensor(ys + hs / 2, mstype.float32)
         bboxes = self.concat_a2((c1, c2, c3, c4))
+
         clses = self.expand_dims(clses, 2)
         scores = self.expand_dims(scores, 2)
         # clses = self.reshape(clses, (b, K, 1))
