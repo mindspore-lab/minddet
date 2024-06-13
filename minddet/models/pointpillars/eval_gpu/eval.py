@@ -763,37 +763,37 @@ def get_official_eval_result(gt_annos, dt_annos, current_classes, PR_detail_dict
             result += print_str(
                 (
                     f"{class_to_name[curcls]} "
-                    "AP@{:.2f}, {:.2f}, {:.2f}:".format(*min_overlaps[i, :, j])
+                    "AP@{: .2f}, {: .2f}, {: .2f}:".format(*min_overlaps[i, :, j])
                 )
             )
             result += print_str(
                 (
-                    f"bbox AP:{mAPbbox[j, 0, i]:.4f}, "
-                    f"{mAPbbox[j, 1, i]:.4f}, "
-                    f"{mAPbbox[j, 2, i]:.4f}"
+                    f"bbox AP: {mAPbbox[j, 0, i]: .4f}, "
+                    f"{mAPbbox[j, 1, i]: .4f}, "
+                    f"{mAPbbox[j, 2, i]: .4f}"
                 )
             )
             result += print_str(
                 (
-                    f"bev  AP:{mAPbev[j, 0, i]:.4f}, "
-                    f"{mAPbev[j, 1, i]:.4f}, "
-                    f"{mAPbev[j, 2, i]:.4f}"
+                    f"bev AP: {mAPbev[j, 0, i]: .4f}, "
+                    f"{mAPbev[j, 1, i]: .4f}, "
+                    f"{mAPbev[j, 2, i]: .4f}"
                 )
             )
             result += print_str(
                 (
-                    f"3d   AP:{mAP3d[j, 0, i]:.4f}, "
-                    f"{mAP3d[j, 1, i]:.4f}, "
-                    f"{mAP3d[j, 2, i]:.4f}"
+                    f"3d AP: {mAP3d[j, 0, i]: .4f}, "
+                    f"{mAP3d[j, 1, i]: .4f}, "
+                    f"{mAP3d[j, 2, i]: .4f}"
                 )
             )
 
             if compute_aos:
                 result += print_str(
                     (
-                        f"aos  AP:{mAPaos[j, 0, i]:.2f}, "
-                        f"{mAPaos[j, 1, i]:.2f}, "
-                        f"{mAPaos[j, 2, i]:.2f}"
+                        f"aos AP: {mAPaos[j, 0, i]: .2f}, "
+                        f"{mAPaos[j, 1, i]: .2f}, "
+                        f"{mAPaos[j, 2, i]: .2f}"
                     )
                 )
                 # if i == 0:
@@ -804,36 +804,36 @@ def get_official_eval_result(gt_annos, dt_annos, current_classes, PR_detail_dict
             result += print_str(
                 (
                     f"{class_to_name[curcls]} "
-                    "AP_R40@{:.2f}, {:.2f}, {:.2f}:".format(*min_overlaps[i, :, j])
+                    "AP_R40@{: .2f}, {: .2f}, {: .2f}:".format(*min_overlaps[i, :, j])
                 )
             )
             result += print_str(
                 (
-                    f"bbox AP:{mAPbbox_R40[j, 0, i]:.4f}, "
-                    f"{mAPbbox_R40[j, 1, i]:.4f}, "
-                    f"{mAPbbox_R40[j, 2, i]:.4f}"
+                    f"bbox AP: {mAPbbox_R40[j, 0, i]: .4f}, "
+                    f"{mAPbbox_R40[j, 1, i]: .4f}, "
+                    f"{mAPbbox_R40[j, 2, i]: .4f}"
                 )
             )
             result += print_str(
                 (
-                    f"bev  AP:{mAPbev_R40[j, 0, i]:.4f}, "
-                    f"{mAPbev_R40[j, 1, i]:.4f}, "
-                    f"{mAPbev_R40[j, 2, i]:.4f}"
+                    f"bev AP: {mAPbev_R40[j, 0, i]: .4f}, "
+                    f"{mAPbev_R40[j, 1, i]: .4f}, "
+                    f"{mAPbev_R40[j, 2, i]: .4f}"
                 )
             )
             result += print_str(
                 (
-                    f"3d   AP:{mAP3d_R40[j, 0, i]:.4f}, "
-                    f"{mAP3d_R40[j, 1, i]:.4f}, "
-                    f"{mAP3d_R40[j, 2, i]:.4f}"
+                    f"3d AP: {mAP3d_R40[j, 0, i]: .4f}, "
+                    f"{mAP3d_R40[j, 1, i]: .4f}, "
+                    f"{mAP3d_R40[j, 2, i]: .4f}"
                 )
             )
             if compute_aos:
                 result += print_str(
                     (
-                        f"aos  AP:{mAPaos_R40[j, 0, i]:.2f}, "
-                        f"{mAPaos_R40[j, 1, i]:.2f}, "
-                        f"{mAPaos_R40[j, 2, i]:.2f}"
+                        f"aos AP: {mAPaos_R40[j, 0, i]: .2f}, "
+                        f"{mAPaos_R40[j, 1, i]: .2f}, "
+                        f"{mAPaos_R40[j, 2, i]: .2f}"
                     )
                 )
                 if i == 0:
@@ -932,32 +932,36 @@ def get_coco_eval_result(gt_annos, dt_annos, current_classes):
         result += print_str(
             (
                 f"{class_to_name[curcls]} "
-                "coco AP@{:.2f}:{:.2f}:{:.2f}:".format(*o_range)
+                "coco AP@{: .2f}: {: .2f}: {: .2f}:".format(*o_range)
             )
         )
         result += print_str(
             (
-                f"bbox AP:{mAPbbox[j, 0]:.2f}, "
-                f"{mAPbbox[j, 1]:.2f}, "
-                f"{mAPbbox[j, 2]:.2f}"
+                f"bbox AP: {mAPbbox[j, 0]: .2f}, "
+                f"{mAPbbox[j, 1]: .2f}, "
+                f"{mAPbbox[j, 2]: .2f}"
             )
         )
         result += print_str(
             (
-                f"bev  AP:{mAPbev[j, 0]:.2f}, "
-                f"{mAPbev[j, 1]:.2f}, "
-                f"{mAPbev[j, 2]:.2f}"
+                f"bev AP: {mAPbev[j, 0]: .2f}, "
+                f"{mAPbev[j, 1]: .2f}, "
+                f"{mAPbev[j, 2]: .2f}"
             )
         )
         result += print_str(
-            (f"3d   AP:{mAP3d[j, 0]:.2f}, " f"{mAP3d[j, 1]:.2f}, " f"{mAP3d[j, 2]:.2f}")
+            (
+                f"3d AP: {mAP3d[j, 0]: .2f}, "
+                f"{mAP3d[j, 1]: .2f}, "
+                f"{mAP3d[j, 2]: .2f}"
+            )
         )
         if compute_aos:
             result += print_str(
                 (
-                    f"aos  AP:{mAPaos[j, 0]:.2f}, "
-                    f"{mAPaos[j, 1]:.2f}, "
-                    f"{mAPaos[j, 2]:.2f}"
+                    f"aos AP: {mAPaos[j, 0]: .2f}, "
+                    f"{mAPaos[j, 1]: .2f}, "
+                    f"{mAPaos[j, 2]: .2f}"
                 )
             )
     return result
