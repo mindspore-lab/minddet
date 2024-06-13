@@ -319,7 +319,7 @@ def kitti_result_line(result_dict, precision=4):
             else:
                 res_line += [prec_float.format(v) for v in val]
         else:
-            raise ValueError(f"unknown key. supported key:{res_dict.keys()}")
+            raise ValueError(f"unknown key. supported key: {res_dict.keys()}")
     return " ".join(res_line)
 
 

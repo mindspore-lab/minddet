@@ -692,9 +692,9 @@ def get_official_eval_result(
             )
             result += print_str(
                 (
-                    f"bbox AP:{map_bbox[j, 0, i]:.2f}, "
-                    f"{map_bbox[j, 1, i]:.2f}, "
-                    f"{map_bbox[j, 2, i]:.2f}"
+                    f"bbox AP: {map_bbox[j, 0, i]: .2f}, "
+                    f"{map_bbox[j, 1, i]: .2f}, "
+                    f"{map_bbox[j, 2, i]: .2f}"
                 )
             )
     if return_data:

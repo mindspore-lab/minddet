@@ -131,10 +131,12 @@ def train(args, save_dir):
             epoch = i // steps_per_epoch
             epoch_used_time = time.time() - last_time
             date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"{date_time} epoch:{epoch}, use time:{epoch_used_time}s", flush=True)
+            print(
+                f"{date_time} epoch: {epoch}, use time: {epoch_used_time}s", flush=True
+            )
             if epoch != 0:
                 print(
-                    f"{date_time} steps_per_epoch:{steps_per_epoch}, step time:{epoch_used_time / steps_per_epoch}s",
+                    f"{date_time} steps_per_epoch: {steps_per_epoch}, step time: {epoch_used_time / steps_per_epoch}s",
                     flush=True,
                 )
             last_time = time.time()
@@ -159,8 +161,8 @@ def train(args, save_dir):
                 fps = (i - old_progress) * batch_size * device_num / time_used
                 date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 print(
-                    f"{date_time} epoch:{epoch}, iter:{i}, ",
-                    f"loss:{loss}, fps:{round(fps, 2)} imgs/sec, ",
+                    f"{date_time} epoch: {epoch}, iter: {i}, ",
+                    f"loss: {loss}, fps: {round(fps, 2)} imgs/sec, ",
                     f"step time: {time_used / (i - old_progress) / device_num} s",
                     flush=True,
                 )
