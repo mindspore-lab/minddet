@@ -92,12 +92,13 @@ mv DATA_ROOT nuScenes # rename to nuScenes
 ```
 
 ### 准备mindrecord数据
-修改配置文件中参数
+修改`tools_ms/create_mindrecord.py`中末尾的`output_path`分别为训练数据与测试数据保存路径。示例如下：
 ```python
-# 训练集路径
-train_mindrecord_dir = "path/to/train_mindrecord"
-# 测试集路径
-test_mindrecord_dir = "path/to/test_mindrecord"
+/path/to/data/path/ptcloud.mindrecord
+```
+之后运行脚本制作mindrecord
+```shell
+python tools_ms/create_mindrecord.py
 ```
 
 ## [快速开始](#contents)
@@ -105,6 +106,13 @@ test_mindrecord_dir = "path/to/test_mindrecord"
 ### 训练
 
 #### 单卡训练
+修改配置文件中参数
+```python
+# 训练集路径
+train_mindrecord_dir = "path/to/train_mindrecord"
+# 测试集路径
+test_mindrecord_dir = "path/to/test_mindrecord"
+```
 
 ```shell
 export DEVICE_ID=X
