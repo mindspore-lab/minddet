@@ -143,10 +143,37 @@ def points_to_voxel(
         voxelmap_shape = voxelmap_shape[::-1]
     # don't create large array in jit(nopython=True) code.
     num_points_per_voxel = np.zeros(shape=(max_voxels,), dtype=np.int32)
+    coor_to_voxelidx = -np.ones(shape=voxelmap_shape, dtype=np.int32)
     voxels = np.zeros(
         shape=(max_voxels, max_points, points.shape[-1]), dtype=points.dtype
     )
     coors = np.zeros(shape=(max_voxels, 3), dtype=np.int32)
+    if reverse_index:
+        _ = _points_to_voxel_reverse_kernel(
+            points,
+            voxel_size,
+            coors_range,
+            num_points_per_voxel,
+            coor_to_voxelidx,
+            voxels,
+            coors,
+            max_points,
+            max_voxels,
+        )
+
+    else:
+        _ = _points_to_voxel_kernel(
+            points,
+            voxel_size,
+            coors_range,
+            num_points_per_voxel,
+            coor_to_voxelidx,
+            voxels,
+            coors,
+            max_points,
+            max_voxels,
+        )
+
     return voxels, coors, num_points_per_voxel
 
 
